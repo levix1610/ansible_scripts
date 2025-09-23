@@ -1,0 +1,30 @@
+# This is to build out the cluster and join up all the nodes as specified.
+# The first 3 nodes are 'control plane' nodes well the last two are worker nodes.
+
+# WORK IN PROGRESS
+
+---
+- name: Initialize MicroK8s on the first control plane node
+  hosts: k8s_control_plane[0]
+  become: yes
+  tasks:
+    - name: Generate join command for all other nodes
+      ansible.builtin.shell: microk8s add-node
+      register: join_token_output
+      run_once: true
+
+- name: Join remaining nodes to the cluster
+  hosts: k8s_control_plane[1:], k8s_workers
+  become: yes
+  tasks:
+    - name: Get join command from the first control plane node
+      ansible.builtin.set_fact:
+        join_command_from_master: "{{ hostvars[groups['k8s_control_plane'][0]]['join_token_output'].stdout }}"
+
+    - name: Run join command on other control plane nodes (no worker flag)
+      ansible.builtin.shell: "{{ join_command_from_master }}"
+      when: inventory_hostname in groups['k8s_control_plane']
+
+    - name: Run join command on dedicated worker nodes (with worker flag)
+      ansible.builtin.shell: "{{ join_command_from_master }} --worker"
+      when: inventory_hostname in groups['k8s_workers']

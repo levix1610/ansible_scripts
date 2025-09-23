@@ -1,0 +1,27 @@
+# This playbook is to install all the needed packages to build the microk8s cluster.
+# Built to run after terraform provisions out the virtual resources.
+
+---
+- name: microk8s server setup
+  hosts: all_nodes
+  become: yes
+  tasks:
+    - name: Ensure all packages are up to date
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+
+    - name: Install MicroK8s snap package
+      ansible.builtin.snap:
+        name: microk8s
+        state: present
+        classic: yes
+
+    - name: Install nfs-common packages
+      ansible.builtin.apt:
+        nfs: nfs-common
+        state: present
+
+
+
