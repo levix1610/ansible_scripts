@@ -19,12 +19,12 @@
   tasks:
     - name: Get join command from the first control plane node
       ansible.builtin.set_fact:
-        join_command_from_master: "{{ hostvars[groups['k8s_control_plane'][0]]['join_token_output'].stdout }}"
+        join_command_from_control_plane: "{{ hostvars[groups['k8s_control_plane'][0]]['join_token_output'].stdout }}"
 
     - name: Run join command on other control plane nodes (no worker flag)
-      ansible.builtin.shell: "{{ join_command_from_master }}"
+      ansible.builtin.shell: "{{ join_command_from_control_plane }}"
       when: inventory_hostname in groups['k8s_control_plane']
 
     - name: Run join command on dedicated worker nodes (with worker flag)
-      ansible.builtin.shell: "{{ join_command_from_master }} --worker"
+      ansible.builtin.shell: "{{ join_command_from_control_plane }} --worker"
       when: inventory_hostname in groups['k8s_workers']
