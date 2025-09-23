@@ -9,7 +9,7 @@
   become: yes
   tasks:
     - name: Generate join command for all other nodes
-      ansible.builtin.shell: microk8s add-node
+      ansible.builtin.shell: microk8s add-node --format short
       register: join_token_output
       run_once: true
 
