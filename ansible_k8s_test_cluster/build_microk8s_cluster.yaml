@@ -6,22 +6,30 @@
 ---
 # Play 1: Generate the join token on the first control node
 - name: Generate cluster join token
-  hosts: k8s_control_plane[0] # Only target the first control node
+  hosts: k8s_control_plane[0]
   become: yes
   tasks:
     - name: Generate join token
       ansible.builtin.shell: microk8s add-node
       register: join_token_output
       
-    - name: Set join command as a global fact
+    - name: Set join command as a fact
       ansible.builtin.set_fact:
         join_command: "{{ join_token_output.stdout }}"
+
+    - name: Debug join_command variable
+      ansible.builtin.debug:
+        var: join_command
       
 # Play 2: Join the other nodes to the cluster
 - name: Join remaining nodes to the cluster
   hosts: k8s_control_plane[1:], k8s_workers
   become: yes
   tasks:
+    - name: Debug join command from first control plane node
+      ansible.builtin.debug:
+        var: hostvars[groups['k8s_control_plane'][0]]['join_command']
+
     - name: Run join command on other control plane nodes
       ansible.builtin.shell: "{{ hostvars[groups['k8s_control_plane'][0]]['join_command'] }}"
       when: inventory_hostname in groups['k8s_control_plane']
