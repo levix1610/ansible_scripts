@@ -20,7 +20,7 @@
 
     - name: Install nfs-common packages
       ansible.builtin.apt:
-        nfs: nfs-common
+        name: nfs-common
         state: present
 
 

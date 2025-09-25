@@ -13,7 +13,7 @@
       register: join_token_output # puts the join tokem command in a variable
       run_once: true
 
----
+
 - name: Join remaining nodes to the cluster
   hosts: k8s_control_plane[1:], k8s_workers # hosts in inventory it will run on
   become: yes # becomes sudo user
@@ -30,7 +30,7 @@
       ansible.builtin.shell: "{{ join_command_from_control_plane }} --worker" # Command to run variable in shell on all worker servers
       when: inventory_hostname in groups['k8s_workers'] # Goes until inventory list is completed
 
----
+
 - name: Configure cluster add ons
   hosts: k8s_control_plane[0] # Run the command on the first node
   become: yes # become sudo user
