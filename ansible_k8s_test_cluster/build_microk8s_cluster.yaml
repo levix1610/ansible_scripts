@@ -15,7 +15,7 @@
       
     - name: Set join command as a fact
       ansible.builtin.set_fact:
-        join_command: "{{ join_token_output.stdout }}"
+        join_command: "{{ join_token_output.stdout | regex_search('microk8s join .*') }}"
 
     #- name: Debug join_command variable
     #  ansible.builtin.debug:
