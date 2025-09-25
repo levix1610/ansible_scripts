@@ -37,6 +37,8 @@
   tasks:
     - name: Enable metrics-server add-on
       ansible.builtin.shell: microk8s enable metrics-server # run shell command to enable metrics-server addon
+      register: result
+      failed_when: "'is already enabled' not in result.stdout and 'is already enabled' not in result.stderr and result.rc != 0"
       run_once: true
 
     - name: Enable MetalLB add-on with IP address pool
