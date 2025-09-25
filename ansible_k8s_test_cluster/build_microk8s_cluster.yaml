@@ -13,6 +13,7 @@
       register: join_token_output # puts the join tokem command in a variable
       run_once: true
 
+---
 - name: Join remaining nodes to the cluster
   hosts: k8s_control_plane[1:], k8s_workers # hosts in inventory it will run on
   become: yes # becomes sudo user
@@ -28,3 +29,16 @@
     - name: Run join command on dedicated worker nodes (with worker flag)
       ansible.builtin.shell: "{{ join_command_from_control_plane }} --worker" # Command to run variable in shell on all worker servers
       when: inventory_hostname in groups['k8s_workers'] # Goes until inventory list is completed
+
+---
+- name: Configure cluster add ons
+  hosts: k8s_control_plane[0] # Run the command on the first node
+  become: yes # become sudo user
+  tasks:
+    - name: Enable metrics-server add-on
+      ansible.builtin.shell: microk8s enable metrics-server # run shell command to enable metrics-server addon
+      run_once: true
+
+    - name: Enable MetalLB add-on with IP address pool
+      ansible.builtin.shell: microk8s enable metallb:10.0.100.2-10.0.100.35 # run shell command to enable metalLB with the default IP range
+      run_once: true
