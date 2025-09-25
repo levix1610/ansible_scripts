@@ -21,6 +21,7 @@
     - name: Get join command from the first control plane node
       ansible.builtin.set_fact: #takes the variable from the task above to run in shell
         join_command_from_control_plane: "{{ hostvars[groups['k8s_control_plane'][0]]['join_token_output'].stdout }}"
+      delegate_to: "{{ groups['k8s_control_plane'][0] }}" # Variable was not accessable to the other nodes - this passes it through
 
     - name: Run join command on other control plane nodes (no worker flag)
       ansible.builtin.shell: "{{ join_command_from_control_plane }}" # Command to run variable in shell on remaind control plane servers
