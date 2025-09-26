@@ -1,0 +1,14 @@
+# Ansible to mount the NFS share to the first node in the cluster
+
+---
+- name: Add NFS share to /etc/fstab and mount it
+  hosts: k8s_control_plane[0]
+  become: yes
+  tasks:
+    - name: Ensure NFS share is present and mounted
+      ansible.builtin.mount:
+        src: 10.0.100.20:/mnt/storage_pool/microk8s  # target of the NFS share
+        path: /mnt/microk8s  # Local Path on the server
+        fstype: nfs
+        opts: defaults
+        state: mounted # Adds the entry to fstab AND executes 'mount -a'
