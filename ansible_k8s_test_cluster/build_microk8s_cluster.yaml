@@ -4,20 +4,11 @@
 # WORK IN PROGRESS
 
 ---
-# Play 1: Initialize the first control plane node
-- name: Initialize the MicroK8s cluster
-  hosts: k8s_control_plane[0]
-  become: yes
-  tasks:
-    - name: Ensure microk8s is in a fresh state
-      ansible.builtin.shell: microk8s reset
-      ignore_errors: true
-
-# Play 2: Join the remaining nodes to the cluster
-- name: Join remaining nodes to the cluster
+# Play 1: Create the cluster
+- name: Create the cluster
   hosts: k8s_control_plane[1:], k8s_workers
   become: yes
-  serial: 1  # Process one host at a time
+  serial: 1  # Tells the playbook to process each one individually and one at a time with a unique join token for each.
   tasks:
     - name: Generate a fresh join token for the current host
       ansible.builtin.shell: microk8s add-node
@@ -33,7 +24,7 @@
       ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }}"
       when: inventory_hostname in groups['k8s_control_plane']
 
-# Play 3: Configure cluster add-ons
+# Play 2: Configure cluster add-ons
 - name: Configure cluster add-ons
   hosts: k8s_control_plane[0]
   become: yes
