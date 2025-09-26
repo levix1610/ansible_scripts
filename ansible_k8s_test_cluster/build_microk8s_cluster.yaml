@@ -13,28 +13,28 @@
     - name: Generate a fresh join token for the current host
       ansible.builtin.shell: microk8s add-node
       run_once: true
-      delegate_to: "{{ groups['k8s_control_plane'][0] }}"
+      delegate_to: "{{ groups['k8s_control_plane'][0] }}" # delegates the first server in the list to act as the main Node to join all others against 
       register: token_output
 
     - name: Run join command
-      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }} --worker"
-      when: inventory_hostname in groups['k8s_workers']
+      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }} --worker"  # This parses out the join command and leave out all the extra output of the command
+      when: inventory_hostname in groups['k8s_workers'] # goes well items still exist in the inventory list in the workers section
 
     - name: Run join command for control plane
-      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }}"
-      when: inventory_hostname in groups['k8s_control_plane']
+      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }}" # This parses out the join command and leave out all the extra output of the command 
+      when: inventory_hostname in groups['k8s_control_plane'] # goes well items still exist in the inventory list for the control plane section
 
 # Play 2: Configure cluster add-ons
 - name: Configure cluster add-ons
   hosts: k8s_control_plane[0]
   become: yes
   tasks:
-    - name: Enable metrics-server add-on (idempotent)
+    - name: Enable metrics-server add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: microk8s enable metrics-server
       register: result
-      failed_when: "'is already enabled' not in result.stderr and result.rc != 0"
+      failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.
 
-    - name: Enable MetalLB add-on (idempotent)
-      ansible.builtin.shell: microk8s enable metallb:10.0.100.2-10.0.100.35
+    - name: Enable MetalLB add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
+      ansible.builtin.shell: microk8s enable metallb:10.0.100.2-10.0.100.35 # MetalLB Range for default Lan of test cluster
       register: result
-      failed_when: "'is already enabled' not in result.stderr and result.rc != 0"
+      failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.

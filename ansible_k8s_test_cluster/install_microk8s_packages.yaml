@@ -3,22 +3,22 @@
 
 ---
 - name: microk8s server setup
-  hosts: all_nodes
-  become: yes
+  hosts: all_nodes # Does all servers in the inventory list
+  become: yes # do as sudo
   tasks:
-    - name: Ensure all packages are up to date
+    - name: Ensure all packages are up to date # Make sure all packages are up to date
       ansible.builtin.apt:
         update_cache: yes
         upgrade: dist
-      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian'
+      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian' # Will only run on ubuntu/debian builds
 
-    - name: Install MicroK8s snap package
+    - name: Install MicroK8s snap package # Installs microk8s on all nodes
       ansible.builtin.snap:
         name: microk8s
         state: present
         classic: yes
 
-    - name: Install nfs-common packages
+    - name: Install nfs-common packages # Installs all nfs packages on all nodes
       ansible.builtin.apt:
         name: nfs-common
         state: present
