@@ -23,5 +23,24 @@
         name: nfs-common
         state: present
 
+    # Inject to netplan NIC config - make secondary NIC use DHCP
+    - name: Inject eth1 configuration into Netplan file
+      ansible.builtin.blockinfile:
+        path: /etc/netplan/50-cloud-init.yaml
+        insertafter: 'ethernets:'   # Use this specific string of text to mark the beginning and end of the configuration block I am injecting.
+        block: |
+          # ANSIBLE MANAGED BLOCK FOR ETH1
+          eth1:
+            match:
+              macaddress: "{{ ansible_eth1.macaddress }}"
+            dhcp4: true
+            set-name: "eth1"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR ETH1"
+        backup: yes
+        
+    # Restarts network stack so second NIC will pull address
+    - name: Apply new Netplan configuration
+      ansible.builtin.command: netplan apply
+
 
 
