@@ -13,3 +13,20 @@
         fstype: nfs
         opts: defaults
         state: mounted # Adds the entry to fstab AND executes 'mount -a'
+
+    # Will created needed directories on NFS share for K8s deployments
+    - name: Create required storage subdirectories on NFS share
+      ansible.builtin.file:
+        path: "/mnt/microk8s/{{ item }}"
+        state: directory
+        mode: '0777'
+      loop:
+        - grafana
+        - heimdall
+        - homarr
+        - influxdb
+        - jellyfin
+        - pihole
+        - pihole-mgmt
+        - plex
+        - postgreshomarr
