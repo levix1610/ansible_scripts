@@ -6,24 +6,24 @@
   become: yes
   tasks:
         # Force Ansible to refresh all network facts - was not able to read interfaces.
-    - name: Gather specific network facts for eth1
+    - name: Gather specific network facts for eth19
       ansible.builtin.setup:
         gather_subset:
           - "!all"
           - "network"
 
-    - name: Inject eth1 configuration into Netplan file
+    - name: Inject eth19 configuration into Netplan file
       ansible.builtin.blockinfile:
         path: /etc/netplan/50-cloud-init.yaml
         insertafter: 'ethernets:'
         block: |
-          # ANSIBLE MANAGED BLOCK FOR ETH1
-          eth1:
+          # ANSIBLE MANAGED BLOCK FOR ETH19
+          eth19:
             match:
-              macaddress: "{{ ansible_eth1.macaddress }}"
+              macaddress: "{{ ansible_eth19.macaddress }}"
             dhcp4: true
-            set-name: "eth1"
-        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR ETH1"
+            set-name: "eth19"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR ETH19"
         backup: yes
         
     - name: Apply new Netplan configuration
