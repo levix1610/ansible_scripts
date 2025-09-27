@@ -5,6 +5,11 @@
   hosts: k8s_workers
   become: yes
   tasks:
+        # Force Ansible to refresh all network facts - was not able to read interfaces.
+    - name: Gather specific network facts for eth1
+      ansible.builtin.setup:
+        gather_subset: "!all", "network"
+
     - name: Inject eth1 configuration into Netplan file
       ansible.builtin.blockinfile:
         path: /etc/netplan/50-cloud-init.yaml
