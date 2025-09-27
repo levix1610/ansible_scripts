@@ -30,3 +30,4 @@
         - pihole-mgmt
         - plex
         - postgreshomarr
+      run_once: true
