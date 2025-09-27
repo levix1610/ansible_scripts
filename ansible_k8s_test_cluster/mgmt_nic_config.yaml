@@ -1,37 +1,25 @@
-# This playbook is to configure the mgmt NICs on the worker nodes in the cluster to DHCP so they get the correct assigned IP address on said subnet.
+# This playbook is to configure the mgmt NICs on the worker nodes in the cluster to DHCP so they get the correct assigned IP address on said subnet
 
 ---
 - name: Configure Secondary NIC on Worker Nodes
   hosts: k8s_workers
   become: yes
   tasks:
-        # Force Ansible to refresh all network facts - was not able to read interfaces.
+    # Force Ansible to refresh all network facts - was not able to read interfaces
     - name: Gather specific network facts for ens19
       ansible.builtin.setup:
         gather_subset:
           - "!all"
           - "network"
 
-    - name: Inject ens19 configuration into Netplan file
-      ansible.builtin.blockinfile:
-        path: /etc/netplan/50-cloud-init.yaml
-        insertafter: 'ethernets:'
-        block: |
-              network:
-                version: 2
-                ethernets:
-                  eth0:
-                    match:
-                      macaddress: "{{ ansible_eth0.macaddress }}" # Primary NIC fact name
-                    dhcp4: true
-                    set-name: "eth0"
-                  ens19:
-                    match:
-                      macaddress: "{{ ansible_ens19.macaddress }}"
-                    dhcp4: true
-                    set-name: "ens19"
-        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR ENS19"
-        backup: yes
+    # Change to copy template into Server - Injection was not working with yaml formating
+    - name: Deploy fully templated Netplan configuration (OVERWRITE)
+      ansible.builtin.template:
+        src: templates/50-cloud-init.yaml.j2
+        dest: /etc/netplan/50-cloud-init.yaml
+        owner: root
+        group: root
+        mode: '0644'
         
     - name: Apply new Netplan configuration
       ansible.builtin.command: netplan apply
