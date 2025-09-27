@@ -1,0 +1,23 @@
+# This playbook is to configure the mgmt NICs on the worker nodes in the cluster to DHCP so they get the correct assigned IP address on said subnet.
+
+---
+- name: Configure Secondary NIC on Worker Nodes
+  hosts: k8s_workers
+  become: yes
+  tasks:
+    - name: Inject eth1 configuration into Netplan file
+      ansible.builtin.blockinfile:
+        path: /etc/netplan/50-cloud-init.yaml
+        insertafter: 'ethernets:'
+        block: |
+          # ANSIBLE MANAGED BLOCK FOR ETH1
+          eth1:
+            match:
+              macaddress: "{{ ansible_eth1.macaddress }}"
+            dhcp4: true
+            set-name: "eth1"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK FOR ETH1"
+        backup: yes
+        
+    - name: Apply new Netplan configuration
+      ansible.builtin.command: netplan apply

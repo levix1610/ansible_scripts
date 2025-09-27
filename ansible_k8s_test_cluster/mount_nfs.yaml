@@ -1,4 +1,5 @@
 # Ansible to mount the NFS share to the first node in the cluster
+# Not needed for the cluster to function with deployment but may be for adding directories into the NFS share for new deployments
 
 ---
 - name: Add NFS share to /etc/fstab and mount it
