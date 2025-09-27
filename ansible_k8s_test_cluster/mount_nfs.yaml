@@ -2,7 +2,7 @@
 
 ---
 - name: Add NFS share to /etc/fstab and mount it
-  hosts: k8s_control_plane[0]
+  hosts: k8s_control_plane
   become: yes
   tasks:
     - name: Ensure NFS share is present and mounted
