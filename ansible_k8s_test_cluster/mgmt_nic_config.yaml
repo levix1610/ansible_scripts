@@ -17,11 +17,11 @@
         path: /etc/netplan/50-cloud-init.yaml
         insertafter: 'ethernets:'
         block: |
-            eth1: # Now using 4 spaces of indentation
-              match:
-                macaddress: "{{ ansible_ens19.macaddress }}"
-              dhcp4: true
-              set-name: "eth1"
+              eth1: # Now using 4 spaces of indentation
+                match:
+                  macaddress: "{{ ansible_ens19.macaddress }}"
+                dhcp4: true
+                set-name: "eth1"
         marker: "# {mark} ANSIBLE MANAGED BLOCK FOR ENS19"
         backup: yes
         
