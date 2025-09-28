@@ -16,23 +16,41 @@
         version: main
         force: yes # makes sure to pull the latest
 
-    # 2. Find all YAML files recursively in the main directory of deployments
-    - name: Find all Kubernetes manifest files
-      ansible.builtin.find:
-        paths: "{{ manifests_path }}"
-        patterns: "*.yaml,*.yml"
-        recurse: yes # Will go through to find all yaml files
-        excludes:
-          - templates/
-          - docs/
-      register: k8s_manifests_files
-      delegate_to: "{{ inventory_hostname }}" # Ensure find runs on the remote node
+    # --- PASS 1: DEPLOY NAMESPACES ONLY ---
+    - name: 2. Deploy all Namespaces from the dedicated 'namespaces' subdirectory
+      block:
+        - name: Find Namespace manifest files
+          ansible.builtin.find:
+            paths: "{{ manifests_path }}/namespaces" # Targets the specific folder
+            patterns: "*.yaml,*.yml"
+            recurse: no
+          register: namespace_manifests
+          
+        - name: Deploy Namespaces
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ namespace_manifests.files }}"
+          loop_control:
+            label: "Namespace: {{ item.path | basename }}"
 
-    # 3. Apply manifests one by one using a loop
-    - name: Apply all manifests to the cluster
-      kubernetes.core.k8s:
-        state: present
-        src: "{{ item.path }}" # Use the path of the found file
-      loop: "{{ k8s_manifests_files.files }}"
-      loop_control:
-        label: "{{ item.path }}" # Shows the file being applied in the output
+    # --- PASS 2: DEPLOY APPLICATIONS (EVERYTHING ELSE) ---
+    - name: 3. Deploy all other application manifests recursively
+      block:
+        - name: Find application manifest files, excluding the 'namespaces' subdirectory
+          ansible.builtin.find:
+            paths: "{{ manifests_path }}"
+            patterns: "*.yaml,*.yml"
+            recurse: yes
+            excludes: 
+              - namespaces # Exclude the directory already processed
+              - templates/
+          register: app_manifests
+          
+        - name: Deploy Application Resources
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ app_manifests.files }}"
+          loop_control:
+            label: "App: {{ item.path | basename }}"
