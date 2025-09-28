@@ -1,0 +1,38 @@
+# This playbook is to apply all the current app deployments I have for my microk8s cluster
+
+---
+- name: deploy_applications.yaml
+  hosts: k8s_control_plane[0]
+  become: yes
+  vars:
+    manifests_path: "~/microk8s-test-cluster-repo" # Define path once for clarity
+
+  tasks:
+    # 1. Clone the repository
+    - name: Clone or update Kubernetes deployment repository
+      ansible.builtin.git:
+        repo: 'https://github.com/levix1610/microk8s-test-cluster-repo.git'
+        dest: "{{ manifests_path }}"
+        version: main
+        force: yes # makes sure to pull the latest
+
+    # 2. Find all YAML files recursively in the main directory of deployments
+    - name: Find all Kubernetes manifest files
+      ansible.builtin.find:
+        paths: "{{ manifests_path }}"
+        patterns: "*.yaml,*.yml"
+        recurse: yes # Will go through to find all yaml files
+        excludes:
+          - templates/
+          - docs/
+      register: k8s_manifests_files
+      delegate_to: "{{ inventory_hostname }}" # Ensure find runs on the remote node
+
+    # 3. Apply manifests one by one using a loop
+    - name: Apply all manifests to the cluster
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ item.path }}" # Use the path of the found file
+      loop: "{{ k8s_manifests_files.files }}"
+      loop_control:
+        label: "{{ item.path }}" # Shows the file being applied in the output
