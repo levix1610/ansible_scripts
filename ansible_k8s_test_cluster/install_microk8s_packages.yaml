@@ -6,6 +6,22 @@
   hosts: all_nodes # Does all servers in the inventory list
   become: yes # do as sudo
   tasks:
+    - name: Remove stale SSH host keys from known_hosts # Speed up the rebuild initial time
+      ansible.builtin.known_hosts:
+        host: "{{ inventory_hostname }}"
+        state: absent
+        # The key_file parameter may be necessary if you are not using the default ~/.ssh/known_hosts
+        # key_file: "~/.ssh/known_hosts"
+      delegate_to: localhost
+      run_once: true # Only needs to be done once per host being targeted
+
+    - name: Deploy Kubernetes Cluster
+      hosts: all
+      gather_facts: false
+      # CRITICAL: Set this variable for the initial connection phase
+      vars:
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no' 
+
     - name: Ensure all packages are up to date # Make sure all packages are up to date
       ansible.builtin.apt:
         update_cache: yes
