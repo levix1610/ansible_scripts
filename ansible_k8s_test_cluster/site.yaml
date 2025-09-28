@@ -1,0 +1,8 @@
+# Control yaml to run all playbooks to build whole cluster
+
+---
+
+- import_playbook: install_microk8s_packages.yaml
+- import_playbook: mgmt_nic_config.yaml
+- import_playbook: mount_nfs.yaml
+- import_playbook: build_microk8s_cluster.yaml
