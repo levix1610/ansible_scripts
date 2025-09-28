@@ -1,7 +1,7 @@
 # This is to install python libraries to primary first node in order to interprate the deploy_applications.yaml
 
 ---
-- name: python_library
+- name: Deployment_prep
   hosts: k8s_control_plane[0]
   become: yes
 
@@ -19,4 +19,19 @@
         name: Kubernetes
         state: present
         extra_args: "--break-system-packages"
+
+    # Get the config for microk8s for user to use
+    - name: Get MicroK8s config content
+      ansible.builtin.shell: microk8s config
+      register: microk8s_config_output
+      changed_when: false # Do not report a change
+      
+
+    - name: Create personal .kube directory and config file for Ansible user
+      ansible.builtin.copy:
+        content: "{{ microk8s_config_output.stdout }}"
+        dest: "/home/levix/.kube/config" # Use the actual home directory
+        owner: levix
+        group: levix
+        mode: '0600'
         
