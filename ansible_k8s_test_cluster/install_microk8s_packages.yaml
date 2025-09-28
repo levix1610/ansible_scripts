@@ -20,6 +20,7 @@
         # key_file: "~/.ssh/known_hosts"
       delegate_to: localhost
       run_once: true # Only needs to be done once per host being targeted
+      become: no
 
     # task 2. update all packages on all servers
     - name: Ensure all packages are up to date # Make sure all packages are up to date
