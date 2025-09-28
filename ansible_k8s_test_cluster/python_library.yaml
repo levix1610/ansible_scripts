@@ -1,0 +1,13 @@
+# This is to install python libraries to primary first node in order to interprate the deploy_applications.yaml
+
+---
+- name: python_library
+  hosts: k8s_control_plane[0]
+  become: yes
+
+  tasks:
+    - name: Ensure Kubernetes Python library is installed
+      ansible.builtin.pip:
+        name: Kubernetes
+        state: present
+        # executable: /usr/bin/pip3 # Optional: specify pip3 executable if necessary
