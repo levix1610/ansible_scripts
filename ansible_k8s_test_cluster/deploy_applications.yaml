@@ -3,7 +3,7 @@
 ---
 - name: deploy_applications.yaml
   hosts: k8s_control_plane[0]
-  become: yes
+  become: no
   vars:
     manifests_path: "~/microk8s-test-cluster-repo" # Define path once for clarity
 
