@@ -10,4 +10,4 @@
       ansible.builtin.pip:
         name: Kubernetes
         state: present
-        # executable: /usr/bin/pip3 # Optional: specify pip3 executable if necessary
+        executable: /usr/bin/pip3 # Optional: specify pip3 executable if necessary
