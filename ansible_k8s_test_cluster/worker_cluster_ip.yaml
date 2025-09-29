@@ -1,0 +1,39 @@
+# This Playbook is to hardcode worker nodes Cluster IP to the primary Cluster Network
+# As the worker nodes have two NICs, it sometimes will switch over to the other VLAN NIC IP address causing cluster communication errors
+
+---
+- name: Configure kubelet with primary IP address on worker nodes
+  hosts: k8s_workers        # Target only your worker nodes
+  become: yes               # Sudo is required for stopping/starting snaps and editing system files
+  vars:
+    # IMPORTANT: Ensure this variable is defined for each host in your inventory.
+    # We use 'ansible_host' as a fallback if you've set it to the correct IP.
+    target_ip: "{{ primary_node_ip | default(ansible_host) }}" 
+    kubelet_config_file: /var/snap/microk8s/current/args/kubelet
+    node_ip_argument: "--node-ip={{ target_ip }}"
+
+  tasks:
+    - name: 1. Stop MicroK8s snap service
+      ansible.builtin.snap:
+        name: microk8s
+        state: stopped
+
+    - name: 2. Ensure '--node-ip' argument is set in the kubelet config file
+      ansible.builtin.lineinfile:
+        path: "{{ kubelet_config_file }}"
+        line: "{{ node_ip_argument }}"
+        # This is the crucial part for idempotency:
+        # It adds the line if missing, or replaces the line if it already contains '--node-ip'
+        regexp: '^--node-ip='
+        create: yes 
+        owner: root
+        group: root
+        mode: '0644'
+      register: kubelet_change
+
+    - name: 3. Restart MicroK8s snap service if the kubelet config was changed
+      ansible.builtin.snap:
+        name: microk8s
+        state: started
+      # Only restart the service if the 'lineinfile' task above actually made a change.
+      when: kubelet_change.changed
