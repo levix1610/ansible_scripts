@@ -14,9 +14,9 @@
 
   tasks:
     - name: 1. Stop MicroK8s snap service
-      ansible.builtin.snap:
-        name: microk8s
-        state: stopped
+      ansible.builtin.shell: snap stop microk8s
+      # The shell module will change the state, so mark as always 'changed'
+      changed_when: true 
 
     - name: 2. Ensure '--node-ip' argument is set in the kubelet config file
       ansible.builtin.lineinfile:
@@ -31,9 +31,9 @@
         mode: '0644'
       register: kubelet_change
 
-    - name: 3. Restart MicroK8s snap service if the kubelet config was changed
-      ansible.builtin.snap:
-        name: microk8s
-        state: started
-      # Only restart the service if the 'lineinfile' task above actually made a change.
+    - name: 3. Start MicroK8s snap service if the kubelet config was changed
+      # Only restart if the 'lineinfile' task above actually modified the config.
+      ansible.builtin.shell: snap start microk8s
       when: kubelet_change.changed
+      # The shell module will change the state, so mark as always 'changed'
+      changed_when: true
