@@ -19,7 +19,7 @@
         # The key_file parameter may be necessary if you are not using the default ~/.ssh/known_hosts
         # key_file: "~/.ssh/known_hosts"
       delegate_to: localhost
-      run_once: true # Only needs to be done once per host being targeted
+      # run_once: true # Only needs to be done once per host being targeted
       become: no
 
     # task 2. update all packages on all servers
