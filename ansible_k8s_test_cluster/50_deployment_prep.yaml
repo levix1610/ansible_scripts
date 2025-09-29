@@ -26,7 +26,16 @@
       register: microk8s_config_output
       changed_when: false # Do not report a change
       
+     # Create the directory needed for the copy task 
+    - name: Create personal .kube directory
+      ansible.builtin.file:
+        path: /home/levix/.kube
+        state: directory  # 👈 Ensures the directory exists
+        owner: levix
+        group: levix
+        mode: '0700'
 
+    # Copy the kube config to directory
     - name: Create personal .kube directory and config file for Ansible user
       ansible.builtin.copy:
         content: "{{ microk8s_config_output.stdout }}"
