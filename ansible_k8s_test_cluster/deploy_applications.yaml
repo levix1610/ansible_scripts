@@ -44,7 +44,7 @@
             recurse: yes
             excludes: 
               - namespaces # Exclude the directory already processed
-              - templates/
+              - templates
           register: app_manifests
           
         - name: Deploy Application Resources
