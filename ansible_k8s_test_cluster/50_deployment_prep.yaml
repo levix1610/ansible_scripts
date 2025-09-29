@@ -30,7 +30,7 @@
     - name: Create personal .kube directory
       ansible.builtin.file:
         path: /home/levix/.kube
-        state: directory  # 👈 Ensures the directory exists
+        state: directory  # Creates the directory
         owner: levix
         group: levix
         mode: '0700'
