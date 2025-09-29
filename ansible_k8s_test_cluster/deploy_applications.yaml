@@ -42,9 +42,9 @@
             paths: "{{ manifests_path }}"
             patterns: "*.yaml,*.yml"
             recurse: yes
-            excludes: 
-              - namespaces # Exclude the directory already processed
-              - templates
+            excludes:  # Exclude the directory already processed
+              - /namespaces 
+              - /templates
           register: app_manifests
           
         - name: Deploy Application Resources
