@@ -44,7 +44,12 @@
             recurse: yes
             excludes:  # Exclude the directory already processed
               - /namespaces 
-              - /templates/
+              - /templates
+
+            # Using exclude_patterns as /templates is not enough for the interprator to ignore the directory
+            use_regex: true
+            exclude_patterns: '.*app-*\.ya?ml$' # Will exclude all template files beginning with 'app-' well the '?' will allow it to mark .yaml or .yml files.
+
           register: app_manifests
           
         - name: Deploy Application Resources
