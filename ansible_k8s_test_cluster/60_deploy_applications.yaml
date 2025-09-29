@@ -53,3 +53,11 @@
           loop: "{{ app_manifests.files }}"
           loop_control:
             label: "App: {{ item.path | basename }}"
+            
+          # Resilience to DQLite/Database Lock Errors
+          register: deployment_result
+          retries: 20       # Try up to 20 times
+          delay: 10         # Wait 10 seconds between attempts (200 seconds total)
+          until: >
+            deployment_result is success
+            or ('database is locked' not in deployment_result.msg | default(''))
