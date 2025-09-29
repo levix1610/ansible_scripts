@@ -41,6 +41,10 @@
       ansible.builtin.apt:
         name: nfs-common
         state: present
+        update_cache: yes
+      retries: 10 # Will retry up to 10 times
+      delay: 5 # Wait 5 seconds between each retry
+      until: ansible_facts.rc == 0 or 'lock-frontend' not in ansible_facts.stderr # Only stop retrying if the return code (rc) is 0 (success)
 
 
 
