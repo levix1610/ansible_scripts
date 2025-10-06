@@ -11,16 +11,16 @@
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
 
   tasks:
-    # task 1. remove any old stale fingerprints
-    - name: Remove stale SSH host keys from known_hosts # Speed up the rebuild initial time
-      ansible.builtin.known_hosts:
-        host: "{{ inventory_hostname }}"
-        state: absent
-        # The key_file parameter may be necessary if you are not using the default ~/.ssh/known_hosts
-        # key_file: "~/.ssh/known_hosts"
-      delegate_to: localhost
-      # run_once: true # Only needs to be done once per host being targeted
-      become: no
+    # task 1. remove any old stale fingerprints # NEED TO COMMENT OUT FOR SEMAPHORE BRANCH - NOT NEEDED WELL USING SAID TOOL.
+    #- name: Remove stale SSH host keys from known_hosts # Speed up the rebuild initial time
+    #  ansible.builtin.known_hosts:
+    #    host: "{{ inventory_hostname }}"
+    #    state: absent
+    #    # The key_file parameter may be necessary if you are not using the default ~/.ssh/known_hosts
+    #    # key_file: "~/.ssh/known_hosts"
+    #  delegate_to: localhost
+    #  # run_once: true # Only needs to be done once per host being targeted
+    #  become: no
 
     # task 2. update all packages on all servers
     - name: Ensure all packages are up to date # Make sure all packages are up to date
