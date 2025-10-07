@@ -43,7 +43,7 @@
             patterns: "*.yaml,*.yml"
             recurse: yes
             excludes:  # Exclude the directory already processed
-              - /namespaces 
+              - namespaces 
           register: app_manifests
           
         - name: Deploy Application Resources
