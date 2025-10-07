@@ -1,7 +1,7 @@
 # This playbook is to apply all the current app deployments - Pushes Docker Hub Account to Cluster
 
 ---
-- name: deploy_applications.yaml - Deploy Apps and Secrets to MicroK8s
+- name: deploy_applications.yaml - Deploy Apps and Docker Secrets to MicroK8s
   hosts: k8s_control_plane[0]
   become: no
   vars:
@@ -9,8 +9,8 @@
     manifests_path: "~/microk8s-test-cluster-repo" 
     
     # Credentials from Semaphore key store
-    docker_hub_username: "{{ lookup('credential', 'Docker Hub Login', 'username') }}"
-    docker_hub_password: "{{ lookup('credential', 'Docker Hub Login', 'password') }}"
+    docker_hub_username: "{{ lookup('credential', 'Docker', 'username') }}"
+    docker_hub_password: "{{ lookup('credential', 'Docker', 'password') }}"
     
     # Namespaces that need the secret applied to
     target_namespaces:
@@ -23,7 +23,7 @@
 
     # PHASE 1: PREPARATION AND MANIFEST GATHERING
 
-    - name: 1. Clone or update Kubernetes deployment repository (MOVED TO TOP)
+    - name: 1. Clone or update Kubernetes deployment repository
       ansible.builtin.git:
         repo: 'https://github.com/levix1610/microk8s-test-cluster-repo.git'
         dest: "{{ manifests_path }}"
