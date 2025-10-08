@@ -5,14 +5,14 @@
   hosts: k8s_workers
   become: yes
   tasks:
-    # Force Ansible to refresh all network facts
+    # Force Ansible to refresh all network facts - was not able to read interfaces
     - name: Gather specific network facts for ens19
       ansible.builtin.setup:
         gather_subset:
           - "!all"
           - "network"
 
-    # Change to copy template into Server
+    # Change to copy template into Server - Injection was not working with yaml formating
     - name: Deploy fully templated Netplan configuration (OVERWRITE)
       ansible.builtin.template:
         src: templates/50-cloud-init.yaml.j2

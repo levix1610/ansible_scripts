@@ -87,8 +87,8 @@
             paths: "{{ manifests_path }}"
             patterns: "*.yaml,*.yml"
             recurse: yes
-            excludes:
-              - namespaces # Exclude the directory already processed
+            excludes:  # Exclude the directory already processed
+              - namespaces 
           register: app_manifests
           
         - name: Deploy Application Resources
