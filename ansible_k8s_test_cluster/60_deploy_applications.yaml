@@ -1,86 +1,41 @@
-# This playbook is to apply all the current app deployments - Pushes Docker Hub Account to Cluster
+# This playbook is to apply all the current app deployments I have for my microk8s cluster
 
 ---
-- name: deploy_applications.yaml - Deploy Apps and Docker Secrets to MicroK8s
+- name: deploy_applications.yaml
   hosts: k8s_control_plane[0]
   become: no
   vars:
-    # Path to clone the manifests repository
-    manifests_path: "~/microk8s-test-cluster-repo" 
-    
-    # Credentials from Semaphore key store
-    docker_hub_username: "{{ lookup('credential', 'docker', 'username') }}"
-    docker_hub_password: "{{ lookup('credential', 'docker', 'password') }}"
-    
-    # Namespaces that need the secret applied to
-    target_namespaces:
-      - default
-      - homarr
-      - media
-      - pihole
+    manifests_path: "~/microk8s-test-cluster-repo" # Define path once for clarity
 
   tasks:
-
-    # PHASE 1: PREPARATION AND MANIFEST GATHERING
-
-    - name: 1. Clone or update Kubernetes deployment repository
+    # 1. Clone the repository
+    - name: Clone or update Kubernetes deployment repository
       ansible.builtin.git:
         repo: 'https://github.com/levix1610/microk8s-test-cluster-repo.git'
         dest: "{{ manifests_path }}"
         version: main
-        force: yes
+        force: yes # makes sure to pull the latest
 
-    # PHASE 2: NAMESPACE CREATION AND SECRET SETUP
-    
-    # Ensure the target namespaces exist before creating secrets
+    # --- PASS 1: DEPLOY NAMESPACES ONLY ---
     - name: 2. Deploy all Namespaces from the dedicated 'namespaces' subdirectory
-      ansible.builtin.find:
-          paths: "{{ manifests_path }}/namespaces"
-          patterns: "*.yaml,*.yml"
-          recurse: no
-      register: namespace_manifests
-      
-    - name: 2.1 Apply Namespace Manifests to create namespaces
-      kubernetes.core.k8s:
-        state: present
-        src: "{{ item.path }}"
-      loop: "{{ namespace_manifests.files }}"
-      loop_control:
-        label: "Namespace Creation: {{ item.path | basename }}"
+      block:
+        - name: Find Namespace manifest files
+          ansible.builtin.find:
+            paths: "{{ manifests_path }}/namespaces" # Targets the specific folder
+            patterns: "*.yaml,*.yml"
+            recurse: no
+          register: namespace_manifests
+          
+        - name: Deploy Namespaces
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ namespace_manifests.files }}"
+          loop_control:
+            label: "Namespace: {{ item.path | basename }}"
 
-    # 3. Generate the base64-encoded .dockerconfigjson structure
-    - name: 3. Generate the base64-encoded .dockerconfigjson structure
-      ansible.builtin.set_fact:
-        docker_config_json: >
-          {
-            "auths": {
-              "https://index.docker.io/v1/": {
-                "username": "{{ docker_hub_username }}",
-                "password": "{{ docker_hub_password }}",
-                "auth": "{{ (docker_hub_username + ':' + docker_hub_password) | b64encode }}"
-              }
-            }
-          }
-      no_log: true # To make sure secrets do not appear in logs
-      run_once: true
-
-    # 4. Create or Update Kubernetes Image Pull Secret in ALL namespaces
-    - name: 4. Create 'docker-hub-pull-secret' in namespace {{ item }}
-      kubernetes.core.k8s_secret:
-        state: present
-        namespace: "{{ item }}" 
-        name: docker-hub-pull-secret
-        type: kubernetes.io/dockerconfigjson
-        data:
-          .dockerconfigjson: "{{ docker_config_json | to_json | b64encode }}"
-      loop: "{{ target_namespaces }}" 
-      loop_control:
-        label: "Secret: docker-hub-pull-secret in {{ item }}"
-
-    # PHASE 3: APPLICATION DEPLOYMENT
-
-    # 5. Deploy all other application manifests recursively
-    - name: 5. Deploy all other application manifests recursively
+    # --- PASS 2: DEPLOY APPLICATIONS (EVERYTHING ELSE) ---
+    - name: 3. Deploy all other application manifests recursively
       block:
         - name: Find application manifest files, excluding the 'namespaces' subdirectory
           ansible.builtin.find:
@@ -88,7 +43,7 @@
             patterns: "*.yaml,*.yml"
             recurse: yes
             excludes:  # Exclude the directory already processed
-              - /namespaces 
+              - namespaces 
           register: app_manifests
           
         - name: Deploy Application Resources
@@ -101,7 +56,8 @@
             
           # Resilience to DQLite/Database Lock Errors
           register: deployment_result
-          retries: 20       
-          delay: 10         
-          until: deployment_result is success
-                 or ('database is locked' not in deployment_result.msg | default(''))
+          retries: 20       # Try up to 20 times
+          delay: 10         # Wait 10 seconds between attempts (200 seconds total)
+          until: >
+            deployment_result is success
+            or ('database is locked' not in deployment_result.msg | default(''))
