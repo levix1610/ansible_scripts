@@ -9,8 +9,8 @@
     manifests_path: "~/microk8s-test-cluster-repo" 
     
     # Credentials from Semaphore key store
-    docker_hub_username: "{{ lookup('credential', 'Docker', 'username') }}"
-    docker_hub_password: "{{ lookup('credential', 'Docker', 'password') }}"
+    docker_hub_username: "{{ lookup('credential', 'docker', 'username') }}"
+    docker_hub_password: "{{ lookup('credential', 'docker', 'password') }}"
     
     # Namespaces that need the secret applied to
     target_namespaces:
