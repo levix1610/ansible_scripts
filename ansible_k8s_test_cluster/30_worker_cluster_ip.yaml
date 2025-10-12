@@ -3,44 +3,44 @@
 
 ---
 - name: Configure kubelet with primary IP address on worker nodes
-  hosts: k8s_workers
-  become: yes
-  vars:
-    # IMPORTANT: Ensure this variable is defined for each host in your inventory.
-    # We use 'ansible_host' as a fallback if you've set it to the correct IP.
-    target_ip: "{{ primary_node_ip | default(ansible_host) }}" 
-    kubelet_config_file: /var/snap/microk8s/current/args/kubelet
-    node_ip_argument: "--node-ip={{ target_ip }}"
+  hosts: k8s_workers
+  become: yes
+  vars:
+    # IMPORTANT: Ensure this variable is defined for each host in your inventory.
+    # We use 'ansible_host' as a fallback if you've set it to the correct IP.
+    target_ip: "{{ primary_node_ip | default(ansible_host) }}"
+    kubelet_config_file: /var/snap/microk8s/current/args/kubelet
+    node_ip_argument: "--node-ip={{ target_ip }}"
 
-  tasks:
+  tasks:
     # --- ADDED DEBUG STEP ---
     - name: DEBUG - Verify target IP for Kubelet
       ansible.builtin.debug:
         msg: "Setting Kubelet node-ip to: {{ target_ip }} (Source: primary_node_ip or ansible_host)"
 
-    - name: 1. Stop MicroK8s snap service
-      ansible.builtin.shell: snap stop microk8s
-      changed_when: true 
+    - name: 1. Stop MicroK8s snap service
+      ansible.builtin.shell: snap stop microk8s
+      changed_when: true 
 
-    - name: 2. Ensure '--node-ip' argument is set in the kubelet config file
-      ansible.builtin.lineinfile:
-        path: "{{ kubelet_config_file }}"
-        line: "{{ node_ip_argument }}"
-        regexp: '^--node-ip='
-        create: yes 
-        owner: root
-        group: root
-        mode: '0644'
-      register: kubelet_change
+    - name: 2. Ensure '--node-ip' argument is set in the kubelet config file
+      ansible.builtin.lineinfile:
+        path: "{{ kubelet_config_file }}"
+        line: "{{ node_ip_argument }}"
+        regexp: '^--node-ip='
+        create: yes 
+        owner: root
+        group: root
+        mode: '0644'
+      register: kubelet_change
 
     # --- MODIFIED TASK 3 FOR ROBUST RESTART ---
-    - name: 3. Restart MicroK8s service with delay to ensure config reload
-      ansible.builtin.shell: |
+    - name: 3. Restart MicroK8s service with delay to ensure config reload
+      ansible.builtin.shell: |
             # Give the system time to close all handles after 'snap stop'
             sleep 5
             snap start microk8s
             # Wait for the service to actually register
             sleep 10
             # Note: This shell task will always show 'changed: true'
-      when: kubelet_change.changed
-      changed_when: true
+      when: kubelet_change.changed
+      changed_when: true
