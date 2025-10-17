@@ -35,6 +35,6 @@
       failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.
 
     - name: Enable MetalLB add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
-      ansible.builtin.shell: microk8s enable metallb:10.0.100.2-10.0.100.35 # MetalLB Range for default Lan of test cluster - Will also need to move to a variable for environments
+      ansible.builtin.shell: "microk8s enable metallb:{{metalLB_ip_range}}" # MetalLB Range for default Lan of test cluster - Will also need to move to a variable for environments
       register: result
       failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.

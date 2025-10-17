@@ -20,14 +20,14 @@
 
     - name: 1. Stop MicroK8s snap service
       ansible.builtin.shell: snap stop microk8s
-      changed_when: true 
+      changed_when: true
 
     - name: 2. Ensure '--node-ip' argument is set in the kubelet config file
       ansible.builtin.lineinfile:
         path: "{{ kubelet_config_file }}"
         line: "{{ node_ip_argument }}"
         regexp: '^--node-ip='
-        create: yes 
+        create: yes
         owner: root
         group: root
         mode: '0644'
