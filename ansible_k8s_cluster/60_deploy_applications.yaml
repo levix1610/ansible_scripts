@@ -9,7 +9,7 @@
     # 1. Clone the repository
     - name: Clone or update Kubernetes deployment repository
       ansible.builtin.git:
-        repo: 'https://github.com/levix1610/microk8s-test-cluster-repo.git'
+        repo: "{{repo}}"
         dest: "{{ manifests_path }}"
         version: main
         force: yes # makes sure to pull the latest
