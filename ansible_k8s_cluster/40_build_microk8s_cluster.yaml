@@ -39,7 +39,7 @@
       until: 
         # 2. Add success condition: command must return 0 OR contain 'is already enabled'
         - result.rc == 0
-        - "'is already enabled' in result.stderr"
+        - "'is already enabled' in result.stdout"
 
     # 2. Enable MetalLB add-on
     - name: Enable MetalLB add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
@@ -52,4 +52,4 @@
         # 1. Command returns a clean exit code (rc=0) 
         # 2. Command reports it's already in the desired state
         - result.rc == 0
-        - "'is already enabled' in result.stderr"
+        - "'is already enabled' in result.stdout"
