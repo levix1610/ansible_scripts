@@ -1,0 +1,36 @@
+---
+- name: Execute Terraform destroy on remote server
+  hosts: ssh_server
+  gather_facts: no
+  
+  # Note: Variables (clone_dir, tf_working_dir, tfvars_file) 
+  # are inherited from your inventory file.
+  
+  tasks:
+    
+    # 1. Clone the repository (Optional, but ensures you have the latest state files and config)
+    - name: Ensure the latest Terraform repository is cloned
+      ansible.builtin.git:
+        repo: 'https://github.com/levix1610/terraform_scripts.git'
+        dest: "{{ clone_dir }}"
+        version: main
+        force: yes 
+      
+    # 2. Run terraform init (Crucial for loading backend state)
+    - name: Initialize Terraform backend and modules
+      ansible.builtin.command: terraform init
+      args:
+        chdir: "{{ tf_working_dir }}"
+      
+    # 3. Run terraform destroy
+    - name: Run Terraform destroy using the specific .tfvars file
+      ansible.builtin.command: 
+        # The -auto-approve flag is necessary for Ansible to run non-interactively
+        cmd: "terraform destroy -auto-approve -var-file={{ tfvars_file }}"
+      args:
+        chdir: "{{ tf_working_dir }}"
+      register: tf_destroy_output
+      
+    - name: Display Terraform destroy output
+      ansible.builtin.debug:
+        msg: "{{ tf_destroy_output.stdout_lines }}"

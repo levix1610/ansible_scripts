@@ -1,6 +1,9 @@
 # Ansible script to run terraform Microk8s build
 # Multi-environment Script - See Inventory to modify variables 
 
+# Note: Variables (clone_dir, tf_working_dir, tfvars_file) 
+# are inherited from your inventory file.
+
 ---
 - name: Execute Terraform deployment on remote server
   hosts: ssh_server
