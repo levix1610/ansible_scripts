@@ -24,9 +24,9 @@
       
     # 3. Run terraform destroy
     - name: Run Terraform destroy using the specific .tfvars file
+      # The -auto-approve flag is necessary for Ansible to run non-interactively
       ansible.builtin.shell:  |
         source {{ env_script_path }} 
-        # The -auto-approve flag is necessary for Ansible to run non-interactively
         terraform destroy -auto-approve -var-file={{ tfvars_file }}
       args:
         chdir: "{{ tf_working_dir }}"
