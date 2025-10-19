@@ -33,19 +33,23 @@
     - name: Enable metrics-server add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: microk8s enable metrics-server
       register: result
-      failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.
+      # 1. Set retries and delay high enough for the service to become reachable
+      retries: 8
+      delay: 15 # Wait 15 seconds between attempts
+      until: 
+        # 2. Add success condition: command must return 0 OR contain 'is already enabled'
+        - result.rc == 0
+        - "'is already enabled' in result.stderr"
 
-    # Add a short pause to let the metrics-server pods start up
-    - name: Wait for metrics-server pods to start
-      ansible.builtin.pause:
-        seconds: 20
-
+    # 2. Enable MetalLB add-on
     - name: Enable MetalLB add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: "microk8s enable metallb:{{metalLB_ip_range}}" # MetalLB Range for default Lan of test cluster - Will also need to move to a variable for environments
       register: result
-      failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.
-
-    # Add a longer pause for MetalLB to stabilize its controller and advertise IPs
-    - name: Wait for MetalLB controller to stabilize
-      ansible.builtin.pause:
-        seconds: 25
+      retries: 8
+      delay: 15 # Give the system time to handle the network configuration
+      until: 
+        # Define SUCCESS:
+        # 1. Command returns a clean exit code (rc=0) 
+        # 2. Command reports it's already in the desired state
+        - result.rc == 0
+        - "'is already enabled' in result.stderr"
