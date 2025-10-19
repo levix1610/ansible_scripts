@@ -36,9 +36,10 @@
 
   # 3. Run terraform apply
     - name: Run Terraform apply using the specific .tfvars file
+     # Changed 'source' to the POSIX-compliant '.' (dot space) operator
+      # The -auto-approve flag is necessary for Ansible to run non-interactively
       ansible.builtin.shell:  |
-        source {{ env_script_path }} 
-        # The -auto-approve flag is necessary for Ansible to run non-interactively
+        . {{ env_script_path }} 
         terraform destroy -auto-approve -var-file={{ tfvars_file }}
       args:
         # Crucial: Execute the command from inside the working directory
