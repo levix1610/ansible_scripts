@@ -3,7 +3,7 @@
   hosts: ssh_server
   gather_facts: no
   
-  # Note: Variables (clone_dir, tf_working_dir, tfvars_file) 
+  # Note: Variables (clone_dir, tf_working_dir, tfvars_file, env_script_path) 
   # are inherited from your inventory file.
   
   tasks:
@@ -24,9 +24,10 @@
       
     # 3. Run terraform destroy
     - name: Run Terraform destroy using the specific .tfvars file
-      ansible.builtin.command: 
+      ansible.builtin.shell:  |
+        source {{ env_script_path }} 
         # The -auto-approve flag is necessary for Ansible to run non-interactively
-        cmd: "terraform destroy -auto-approve -var-file={{ tfvars_file }}"
+        terraform destroy -auto-approve -var-file={{ tfvars_file }}
       args:
         chdir: "{{ tf_working_dir }}"
       register: tf_destroy_output
