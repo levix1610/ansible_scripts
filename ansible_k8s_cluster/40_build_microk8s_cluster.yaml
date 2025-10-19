@@ -29,12 +29,23 @@
   hosts: k8s_control_plane[0]
   become: yes
   tasks:
+    # 1. Enable metrics-server
     - name: Enable metrics-server add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: microk8s enable metrics-server
       register: result
       failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.
 
+    # Add a short pause to let the metrics-server pods start up
+    - name: Wait for metrics-server pods to start
+      ansible.builtin.pause:
+        seconds: 20
+
     - name: Enable MetalLB add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: "microk8s enable metallb:{{metalLB_ip_range}}" # MetalLB Range for default Lan of test cluster - Will also need to move to a variable for environments
       register: result
       failed_when: "'is already enabled' not in result.stderr and result.rc != 0" # Check to make sure its in the desired state; otherwise will send a non-zero return code.
+
+    # Add a longer pause for MetalLB to stabilize its controller and advertise IPs
+    - name: Wait for MetalLB controller to stabilize
+      ansible.builtin.pause:
+        seconds: 25
