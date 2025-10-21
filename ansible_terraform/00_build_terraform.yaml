@@ -1,7 +1,7 @@
 # Ansible script to run terraform Microk8s build
 # Multi-environment Script - See Inventory to modify variables 
 
- # Note: Variables (clone_dir, tf_working_dir, tfvars_file, env_script_path) 
+# Note: Variables (clone_dir, tf_working_dir, tfvars_file, env_script_path) 
 # are inherited from your inventory file.
 
 ---
@@ -36,7 +36,7 @@
 
   # 3. Run terraform apply
     - name: Run Terraform apply using the specific .tfvars file
-     # Changed 'source' to the POSIX-compliant '.' (dot space) operator
+      # Changed 'source' to the POSIX-compliant '.' (dot space) operator
       # The -auto-approve flag is necessary for Ansible to run non-interactively
       ansible.builtin.shell:  |
         . {{ env_script_path }} 
