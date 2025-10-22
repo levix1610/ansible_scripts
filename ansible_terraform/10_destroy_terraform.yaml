@@ -1,4 +1,4 @@
-# Ansible script to run terraform Microk8s build
+# Ansible script to run terraform destroy
 # Multi-environment Script - See Inventory to modify variables 
 
 # Note: Variables (clone_dir, tf_working_dir, tfvars_file, env_script_path) 
