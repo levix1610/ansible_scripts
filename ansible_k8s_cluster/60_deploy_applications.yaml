@@ -6,39 +6,56 @@
   become: no
 
   tasks:
-    # 1. FETCH KUBECONFIG TO RUNNER (Still necessary for backup/templating checks)
-    - name: Fetch MicroK8s client config to Controller
-      ansible.builtin.fetch:
-        src: /var/snap/microk8s/current/credentials/client.config 
-        dest: /tmp/kubeconfig/ 
-        flat: yes 
-      # We keep this as-is, running on the remote host
+    # 1. Clone the repository
+    - name: Clone or update Kubernetes deployment repository
+      ansible.builtin.git:
+        repo: "{{repo}}"
+        dest: "{{ manifests_path }}"
+        version: main
+        force: yes # makes sure to pull the latest
 
-    # 2. GENERATE MANIFEST ON RUNNER (Still delegated to localhost to use Vault vars)
-    - name: Ensure Kubernetes secret is created/updated from template (on Controller runner)
-      ansible.builtin.template:
-        src: templates/55-inject-secrets.yaml.j2 
-        # TEMPLATE IT TO A SAFE /TMP LOCATION ON THE RUNNER
-        dest: /tmp/homar-k8s-secret.yaml 
-      delegate_to: localhost 
-      become: no # Run as the unprivileged semaphore user
-      run_once: true
+    # --- PASS 1: DEPLOY NAMESPACES ONLY ---
+    - name: 2. Deploy all Namespaces from the dedicated 'namespaces' subdirectory
+      block:
+        - name: Find Namespace manifest files
+          ansible.builtin.find:
+            paths: "{{ manifests_path }}/namespaces" # Targets the specific folder
+            patterns: "*.yaml,*.yml"
+            recurse: no
+          register: namespace_manifests
+          
+        - name: Deploy Namespaces
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ namespace_manifests.files }}"
+          loop_control:
+            label: "Namespace: {{ item.path | basename }}"
 
-    # 3. TRANSFER MANIFEST BACK TO K8S NODE
-    - name: Copy manifest from runner to K8s node's /tmp directory
-      ansible.builtin.copy:
-        src: /tmp/homar-k8s-secret.yaml # Source is the runner
-        dest: /tmp/homar-k8s-secret.yaml # Destination is the remote K8s host
-        mode: '0600'
-      # Runs on the K8s node
-
-    # 4. APPLY SECRET ON K8S NODE (Just like your successful playbook)
-    - name: Apply the Kubernetes secret configuration to the cluster
-      kubernetes.core.k8s:
-        # Kubeconfig path on the remote K8s host
-        kubeconfig: /var/snap/microk8s/current/credentials/client.config
-        # Source file path on the remote K8s host
-        src: /tmp/homar-k8s-secret.yaml 
-        state: present
-      become: no # Run as the user that can access kubeconfig on the K8s node
-      register: k8s_result
+    # --- PASS 2: DEPLOY APPLICATIONS (EVERYTHING ELSE) ---
+    - name: 3. Deploy all other application manifests recursively
+      block:
+        - name: Find application manifest files, excluding the 'namespaces' subdirectory
+          ansible.builtin.find:
+            paths: "{{ manifests_path }}"
+            patterns: "*.yaml,*.yml"
+            recurse: yes
+            excludes:  # Exclude the directory already processed
+              - namespaces 
+          register: app_manifests
+          
+        - name: Deploy Application Resources
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ app_manifests.files }}"
+          loop_control:
+            label: "App: {{ item.path | basename }}"
+            
+          # Resilience to DQLite/Database Lock Errors
+          register: deployment_result
+          retries: 20       # Try up to 20 times
+          delay: 10         # Wait 10 seconds between attempts (200 seconds total)
+          until: >
+            deployment_result is success
+            or ('database is locked' not in deployment_result.msg | default(''))
