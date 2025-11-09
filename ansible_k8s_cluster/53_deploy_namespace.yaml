@@ -1,0 +1,34 @@
+# This playbook is to apply all namespace yamls - needed prior to secrets being deployed
+#  --- ONLY NEED TO RUN THIS PLAYBOOK ON A BRAND NEW CLUSTER DEPLOY ---
+
+---
+- name: deploy_applications.yaml
+  hosts: k8s_control_plane[0]
+  become: no
+
+  tasks:
+    # 1. Clone the repository
+    - name: Clone or update Kubernetes deployment repository
+      ansible.builtin.git:
+        repo: "{{repo}}"
+        dest: "{{ manifests_path }}"
+        version: main
+        force: yes # makes sure to pull the latest
+
+    # --- PASS 1: DEPLOY NAMESPACES ONLY ---
+    - name: 2. Deploy all Namespaces from the dedicated 'namespaces' subdirectory
+      block:
+        - name: Find Namespace manifest files
+          ansible.builtin.find:
+            paths: "{{ manifests_path }}/namespaces" # Targets the specific folder
+            patterns: "*.yaml,*.yml"
+            recurse: no
+          register: namespace_manifests
+          
+        - name: Deploy Namespaces
+          kubernetes.core.k8s:
+            state: present
+            src: "{{ item.path }}"
+          loop: "{{ namespace_manifests.files }}"
+          loop_control:
+            label: "Namespace: {{ item.path | basename }}"
