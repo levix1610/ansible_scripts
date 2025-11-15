@@ -9,6 +9,7 @@
     - name: Ensure NFS share is present and mounted
       ansible.builtin.mount:
         src: "{{nfs_microk8s_source}}"  # target of the NFS share - Changed over to variable - see dev inventory
+        # will need to be modified to accept different env. for different target directories.
         path: /mnt/microk8s  # Local Path on the server
         fstype: nfs
         opts: defaults
