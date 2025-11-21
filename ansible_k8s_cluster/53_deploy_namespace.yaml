@@ -11,7 +11,7 @@
     - name: Clone or update Kubernetes deployment repository
       ansible.builtin.git:
         repo: "{{repo}}"
-        dest: "{{ manifests_path }}"
+        dest: "{{ manifests_base_path }}"
         version: main
         force: yes # makes sure to pull the latest
 
