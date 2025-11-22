@@ -9,9 +9,12 @@
   hosts: ssh_server
   gather_facts: no # No need to collect facts for this process
   vars:
+    vars:
     ansible_ssh_args: '-o ControlMaster=no -o ControlPersist=no -o StrictHostKeyChecking=no'
-    ansible_ssh_common_args: '' # Clears previous common args like StrictHostKeyChecking=no
   
+  # IMPORTANT: Set a very long timeout for the entire task (e.g., 20 minutes)
+  # This prevents Ansible itself from terminating the task before Terraform is done.
+  timeout: 1200
   
   tasks:
     
