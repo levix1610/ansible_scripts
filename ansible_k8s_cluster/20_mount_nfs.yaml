@@ -30,7 +30,8 @@
         - influxdb
         - jellyfin
         - pihole
-        - pihole-mgmt
+        - pihole-mgmt # (for DEV)
+        - pihole-iot  # (for PROD)
         - plex
         - postgreshomarr
       run_once: true
