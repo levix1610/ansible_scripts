@@ -20,8 +20,8 @@
       ansible.builtin.file:
         path: "/mnt/microk8s/{{ item }}"
         state: directory
-        owner: 1000
-        group: 1000
+        owner: 1002
+        group: 988
       loop:
         - grafana
         - heimdall
