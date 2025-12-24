@@ -34,5 +34,5 @@
         - pihole-iot  # (for PROD)
         - plex
         - postgreshomarr
-        - nginx
+        - nginx # (Testing in DEV (12/25))
       run_once: true
