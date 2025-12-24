@@ -22,7 +22,6 @@
         state: directory
         owner: 1002
         group: 988
-        # mode: '0775' - Needs to be commented out for UNAS.
       loop:
         - grafana
         - heimdall
