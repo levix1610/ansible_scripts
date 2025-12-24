@@ -20,8 +20,9 @@
       ansible.builtin.file:
         path: "/mnt/microk8s/{{ item }}"
         state: directory
-        owner: 1002
-        group: 988
+        # owner: 1002
+        # group: 988
+        mode: '0775' # Set permissions so the group can write
       loop:
         - grafana
         - heimdall
