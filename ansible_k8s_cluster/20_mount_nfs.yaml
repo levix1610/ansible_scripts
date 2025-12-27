@@ -32,5 +32,4 @@
         - plex
         - postgreshomarr
         - nginx # (Testing in DEV (12/25))
-        - testdir # (Testing creation of directories)
       run_once: true
