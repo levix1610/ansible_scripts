@@ -1,0 +1,19 @@
+# This playbook is for updating all server outside of the k8s clusters
+# Inventory dependant on which environment it updates
+---
+- name: Server update
+  hosts: all_nodes # Does all servers in the inventory list
+  become: yes # do as sudo
+  gather_facts: yes
+ 
+  vars:
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+  tasks:
+
+    # task 1. update all packages on all servers
+    - name: Ensure all packages are up to date # Make sure all packages are up to date
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+        when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian' # Will only run on ubuntu/debian builds
+
