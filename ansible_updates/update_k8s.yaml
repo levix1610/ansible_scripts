@@ -1,19 +1,57 @@
 # This playbook is for updating all the servers in the Microk8s Clusters
 # Inventory dependant on which environment it updates
 ---
-- name: microk8s server update
-  hosts: all_nodes # Does all servers in the inventory list
-  become: yes # do as sudo
-  gather_facts: yes
- 
-  vars:
-    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-  tasks:
+- name: Rolling Update for MicroK8s Cluster
+  hosts: k8s_nodes
+  serial: 1  # One node at a time
+  become: yes
 
-    # task 1. update all packages on all servers
-    - name: Ensure all packages are up to date # Make sure all packages are up to date
-      ansible.builtin.apt:
+  vars:
+    # Use your first control plane node as the "manager" for kubectl commands
+    k8s_manager: "{{ k8s_primary }}" 
+
+  tasks:
+    # 1. Drain the node
+    - name: Drain node (Evict pods)
+      shell: "kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force --timeout=300s"
+      delegate_to: "{{ k8s_manager }}"
+      # We ignore errors here only if the node is already cordoned/empty
+      failed_when: false 
+
+    # 2. Standard OS Updates
+    - name: Run apt update and upgrade
+      apt:
         update_cache: yes
         upgrade: dist
-        when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian' # Will only run on ubuntu/debian builds
+        autoremove: yes
+
+    # 3. MicroK8s specific update (Optional - if you want to refresh the snap)
+    - name: Refresh MicroK8s Snap
+      command: snap refresh microk8s
+      changed_when: false
+
+    # 4. Reboot Logic
+    - name: Check if reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Reboot node
+      reboot:
+        reboot_timeout: 600
+      when: reboot_required_file.stat.exists
+
+    # 5. Uncordon the node
+    - name: Uncordon node (Allow pods back)
+      shell: "kubectl uncordon {{ inventory_hostname }}"
+      delegate_to: "{{ k8s_manager }}"
+
+    # 6. Wait for node to be Ready
+    - name: Wait for node to report Ready status
+      shell: "kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
+      delegate_to: "{{ k8s_manager }}"
+      register: node_status
+      until: node_status.stdout == "True"
+      retries: 12
+      delay: 10
 
