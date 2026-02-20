@@ -13,7 +13,7 @@
   tasks:
     # 1. Drain the node
     - name: Drain node (Evict pods)
-      shell: "kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force --timeout=300s"
+      shell: "microk8s kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force --timeout=300s"
       delegate_to: "{{ k8s_manager }}"
       # We ignore errors here only if the node is already cordoned/empty
       failed_when: false 
@@ -43,12 +43,12 @@
 
     # 5. Uncordon the node
     - name: Uncordon node (Allow pods back)
-      shell: "kubectl uncordon {{ inventory_hostname }}"
+      shell: "microk8s kubectl uncordon {{ inventory_hostname }}"
       delegate_to: "{{ k8s_manager }}"
 
     # 6. Wait for node to be Ready
     - name: Wait for node to report Ready status
-      shell: "kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
+      shell: "microk8s kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
       delegate_to: "{{ k8s_manager }}"
       register: node_status
       until: node_status.stdout == "True"
