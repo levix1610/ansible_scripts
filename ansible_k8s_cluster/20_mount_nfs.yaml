@@ -18,7 +18,7 @@
     # Will created needed directories on NFS share for K8s deployments
     - name: Create required storage subdirectories on NFS share
       ansible.builtin.file:
-        path: "/mnt/storage_pool/{{ environment }}_microk8s/{{ item }}"
+        path: "/mnt/{{ environment }}_microk8s/{{ item }}"
         state: directory
       loop:
         - grafana
