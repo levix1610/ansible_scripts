@@ -32,24 +32,36 @@
     # 1. Enable metrics-server
     - name: Enable metrics-server add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: microk8s enable metrics-server
-      register: result
-      # 1. Set retries and delay high enough for the service to become reachable
-      retries: 8
-      delay: 15 # Wait 15 seconds between attempts
-      until: 
-        # 2. Add success condition: command must return 0 OR contain 'is already enabled'
-        - result.rc == 0
-        - "'is already enabled' in result.stdout"
+      register: metrics_result
+      # Tells Ansible it only "changed" things if it actually did an install
+      changed_when: "'is already enabled' not in metrics_result.stdout"
 
     # 2. Enable MetalLB add-on
     - name: Enable MetalLB add-on (idempotent) # operation will produce the same result every time it is run, regardless of the system's initial state.
       ansible.builtin.shell: "microk8s enable metallb:{{metalLB_ip_range}}" # MetalLB Range for default Lan of test cluster - Will also need to move to a variable for environments
-      register: result
-      retries: 8
-      delay: 15 # Give the system time to handle the network configuration
-      until: 
-        # Define SUCCESS:
-        # 1. Command returns a clean exit code (rc=0) 
-        # 2. Command reports it's already in the desired state
-        - result.rc == 0
-        - "'is already enabled' in result.stdout"
+      register: metallb_result
+      # Tells Ansible it only "changed" things if it actually did an install
+      changed_when: "'is already enabled' not in metallb_result.stdout"
+
+    # 3. Enable observability add-on
+    - name: Enable observability add-on
+      ansible.builtin.shell: microk8s enable observability
+      register: obs_result
+      # This tells Ansible it only "changed" things if it actually did an install
+      changed_when: "'is already enabled' not in obs_result.stdout"
+
+    # 4. Wait for the Grafana deployment object to be created by the add-on
+    - name: Wait for Grafana deployment to exist
+      ansible.builtin.shell: microk8s kubectl get deployment kube-prom-stack-grafana -n observability
+      register: grafana_check
+      retries: 24   # Try for up to 4 minutes (24 * 10 seconds)
+      delay: 10
+      until: grafana_check.rc == 0
+      changed_when: false # Checking status shouldn't register as a "change"
+
+    # 5. Scale down the built-in Grafana
+    - name: Scale observability Grafana down to 0 replicas
+      ansible.builtin.shell: microk8s kubectl scale deployment kube-prom-stack-grafana -n observability --replicas=0
+      register: scale_result
+      # kubectl outputs "... scaled" when it changes, and "... unchanged" when it's already at 0
+      changed_when: "'scaled' in scale_result.stdout"
