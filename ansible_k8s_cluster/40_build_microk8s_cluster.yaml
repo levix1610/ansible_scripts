@@ -10,19 +10,36 @@
   become: yes
   serial: 1  # Tells the playbook to process each one individually and one at a time with a unique join token for each.
   tasks:
+    # 1. Ask the primary node for a list of already joined nodes
+    - name: Get list of nodes currently in the cluster
+      ansible.builtin.shell: microk8s kubectl get nodes -o jsonpath='{.items[*].metadata.name}'
+      delegate_to: "{{ groups['k8s_control_plane'][0] }}"
+      run_once: true
+      register: cluster_nodes
+      changed_when: false # This is just a read operation, so no changes made
+
+    # 2. Generate token (We still do this just in case the current serial node needs it)
     - name: Generate a fresh join token for the current host
       ansible.builtin.shell: microk8s add-node
       run_once: true
-      delegate_to: "{{ groups['k8s_control_plane'][0] }}" # delegates the first server in the list to act as the main Node to join all others against 
+      delegate_to: "{{ groups['k8s_control_plane'][0] }}"
       register: token_output
+      # Only generate a token if the current node actually needs to join
+      when: inventory_hostname not in cluster_nodes.stdout
 
-    - name: Run join command
-      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }} --worker"  # This parses out the join command and leave out all the extra output of the command
-      when: inventory_hostname in groups['k8s_workers'] # goes well items still exist in the inventory list in the workers section
+    # 3. Join Workers (Skipped if already in the cluster)
+    - name: Run join command for workers
+      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }} --worker"  
+      when: 
+        - inventory_hostname in groups['k8s_workers']
+        - inventory_hostname not in cluster_nodes.stdout
 
+    # 4. Join Control Plane (Skipped if already in the cluster)
     - name: Run join command for control plane
-      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }}" # This parses out the join command and leave out all the extra output of the command 
-      when: inventory_hostname in groups['k8s_control_plane'] # goes well items still exist in the inventory list for the control plane section
+      ansible.builtin.shell: "{{ token_output.stdout | regex_search('microk8s join .*') }}" 
+      when: 
+        - inventory_hostname in groups['k8s_control_plane']
+        - inventory_hostname not in cluster_nodes.stdout
 
 # Play 2: Configure cluster add-ons
 - name: Configure cluster add-ons
