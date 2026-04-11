@@ -9,8 +9,8 @@ metadata:
 spec:
   acme:
     # Let's Encrypt will use this to contact you about expiring certs
-    email: "{{ email }}"
-    server: "{{ server }}"
+    email: "{{ cloudflare_email }}"
+    server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:
       # Secret resource that will be used to store the account's private key.
       name: letsencrypt-prod-account-key
