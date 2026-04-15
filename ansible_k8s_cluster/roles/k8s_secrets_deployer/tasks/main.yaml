@@ -1,0 +1,26 @@
+# This is the reusable logic for deploying ANY Kubernetes manifest.
+
+# 1. TEMPLATE MANIFEST ON RUNNER (Reuses the crucial environment fix from the conductor playbook)
+- name: Template manifest on runner {{ dest_filename }}
+  ansible.builtin.template:
+    src: "{{ template_src }}" # Variable for the J2 source file
+    dest: "/tmp/{{ dest_filename }}" # Creates the file in the safe /tmp
+  delegate_to: localhost 
+  become: no 
+  run_once: true
+
+# 2. TRANSFER MANIFEST BACK TO K8S NODE
+- name: Copy manifest from runner to K8s node
+  ansible.builtin.copy:
+    src: "/tmp/{{ dest_filename }}" # Source is the safe /tmp path on the runner
+    dest: "/home/levix/{{ dest_filename }}" # Destination is the clean home directory on the remote node
+    mode: '0700'
+
+# 3. APPLY SECRET ON K8S NODE
+- name: Apply {{ dest_filename }} to the cluster
+  kubernetes.core.k8s:
+    # Uses the known location of the MicroK8s Kubeconfig on the remote server
+    kubeconfig: /var/snap/microk8s/current/credentials/client.config
+    src: "/home/levix/{{ dest_filename }}" 
+    state: present
+  become: yes # Required to talk to the MicroK8s API

@@ -1,0 +1,22 @@
+# Cert manager Issuer service for App Ingress
+# This will issue 'live prod certs' for Ingress
+# Limit is 50 per week - careful with use
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Let's Encrypt will use this to contact you about expiring certs
+    email: "{{ cloudflare_email }}"
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: letsencrypt-prod-account-key
+    solvers:
+    - dns01:
+        cloudflare:
+          apiTokenSecretRef:
+            name: cloudflare-api-token-secret
+            key: api-token

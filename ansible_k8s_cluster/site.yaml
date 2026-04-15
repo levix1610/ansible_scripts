@@ -3,7 +3,7 @@
 ---
 
 - import_playbook: 00_install_microk8s_packages.yaml # Will clear out any old ssh fingerprings from old cluster, connect to new cluster, and install all necessary packages
-- import_playbook: 10_mgmt_nic_config.yaml # Configures the secondary Worker Node NICs to use DHCP and grab its network defined Static IP - needed for some deployments
+- import_playbook: 10_secondary_nic_config.yaml # Configures the secondary Worker Node NICs to use DHCP and grab its network defined Static IP - needed for some deployments
 - import_playbook: 20_mount_nfs.yaml # Will mount the NFS shares on control planes - will go into NFS share to make sure all needed directories are made for deployments
 - import_playbook: 30_worker_cluster_ip.yaml # Set the primary IP address to use in the cluster over the secondary on the worker nodes
 - import_playbook: 40_build_microk8s_cluster.yaml # Will join all 5-nodes into a cluster with two of them being strict worker nodes

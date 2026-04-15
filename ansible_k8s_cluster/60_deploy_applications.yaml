@@ -4,15 +4,13 @@
 - name: deploy_applications.yaml
   hosts: k8s_control_plane[0]
   become: no
-  vars:
-    manifests_path: "~/microk8s-test-cluster-repo" # Define path once for clarity
 
   tasks:
     # 1. Clone the repository
     - name: Clone or update Kubernetes deployment repository
       ansible.builtin.git:
-        repo: 'https://github.com/levix1610/microk8s-test-cluster-repo.git'
-        dest: "{{ manifests_path }}"
+        repo: "{{repo}}"
+        dest: "{{ manifests_base_path }}"
         version: main
         force: yes # makes sure to pull the latest
 
@@ -43,7 +41,7 @@
             patterns: "*.yaml,*.yml"
             recurse: yes
             excludes:  # Exclude the directory already processed
-              - /namespaces 
+              - namespaces 
           register: app_manifests
           
         - name: Deploy Application Resources

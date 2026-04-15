@@ -1,0 +1,67 @@
+# This playbook is for updating all the servers in the Microk8s Clusters
+# Inventory dependant on which environment it updates
+---
+- name: Rolling Update for MicroK8s Cluster
+  hosts: k8s_nodes
+  serial: 1  # One node at a time
+  become: yes
+
+  vars:
+    # Use your first control plane node as the "manager" for kubectl commands
+    k8s_manager: "{{ k8s_primary }}" 
+
+  tasks:
+    # 1. Drain the node
+    - name: Drain node (Evict pods)
+      shell: "microk8s kubectl drain {{ inventory_hostname }} --ignore-daemonsets --delete-emptydir-data --force --timeout=300s"
+      delegate_to: "{{ k8s_manager }}"
+      # We ignore errors here only if the node is already cordoned/empty
+      failed_when: false 
+
+    # 2. Standard OS Updates
+    - name: Run apt update and upgrade
+      apt:
+        update_cache: yes
+        upgrade: dist
+        autoremove: yes
+
+    # 3. MicroK8s specific update (Optional - if you want to refresh the snap)
+    - name: Refresh MicroK8s Snap
+      command: snap refresh microk8s
+      changed_when: false
+
+    # 4. Reboot Logic
+    - name: Check if reboot is required
+      stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Reboot node
+      reboot:
+        reboot_timeout: 600
+      when: reboot_required_file.stat.exists
+
+    # 5. Check to make sure API is responsive (Needed when reboot is necessary so the playbook does not error out.)
+    - name: Wait for MicroK8s API to be responsive
+      command: microk8s kubectl get nodes
+      delegate_to: "{{ k8s_manager }}"
+      register: api_check
+      until: api_check.rc == 0
+      retries: 20
+      delay: 15
+      changed_when: false
+
+    # 6. Uncordon the node
+    - name: Uncordon node (Allow pods back)
+      shell: "microk8s kubectl uncordon {{ inventory_hostname }}"
+      delegate_to: "{{ k8s_manager }}"
+
+    # 7. Wait for node to be Ready
+    - name: Wait for node to report Ready status
+      shell: "microk8s kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
+      delegate_to: "{{ k8s_manager }}"
+      register: node_status
+      until: node_status.stdout == "True"
+      retries: 12
+      delay: 10
+
