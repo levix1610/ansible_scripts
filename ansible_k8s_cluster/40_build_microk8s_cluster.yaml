@@ -82,3 +82,17 @@
       register: scale_result
       # kubectl outputs "... scaled" when it changes, and "... unchanged" when it's already at 0
       changed_when: "'scaled' in scale_result.stdout"
+
+    # 6. Enable ingress add-on
+    - name: Enable ingress add-on
+      ansible.builtin.shell: microk8s enable ingress
+      register: ingress_result
+      # This tells Ansible it only "changed" things if it actually did an install
+      changed_when: "'is already enabled' not in ingress_result.stdout"
+
+    # 7. Enable cert-manager add-on
+    - name: Enable cert-manager add-on
+      ansible.builtin.shell: microk8s enable cert-manager
+      register: cert_manager_result
+      # This tells Ansible it only "changed" things if it actually did an install
+      changed_when: "'is already enabled' not in cert_manager_result.stdout"
