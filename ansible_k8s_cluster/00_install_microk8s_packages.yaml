@@ -5,7 +5,7 @@
 - name: microk8s server setup
   hosts: all_nodes # Does all servers in the inventory list
   become: yes # do as sudo
-  gather_facts: no
+  gather_facts: yes
 
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
