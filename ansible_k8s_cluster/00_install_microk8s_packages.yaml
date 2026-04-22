@@ -16,7 +16,6 @@
       ansible.builtin.apt:
         update_cache: yes
         upgrade: dist
-      when: ansible_distribution == 'Ubuntu' or ansible_distribution == 'Debian' # Will only run on ubuntu/debian builds
 
     # task 2. install microk8s
     - name: Install MicroK8s snap package # Installs microk8s on all nodes
