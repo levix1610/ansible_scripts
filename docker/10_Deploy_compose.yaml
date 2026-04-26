@@ -5,15 +5,13 @@
   hosts: remote_docker
   become: true
   vars:
-    # env_target comes from your Inventory (camper, test, etc.)
+    # env_target comes from your Inventory
     remote_base_path: "/opt/appdata"
-    
-    # Information for your second repo
-    docker_repo_url: "https://github.com/levix1610/docker_compose.git"
     temp_repo_path: "{{ playbook_dir }}/.temp_docker_repo"
+    docker_repo_url: "https://github.com/levix1610/docker_compose.git"
 
   tasks:
-    - name: "Local: Clone Docker Compose repo to Semaphore Runner"
+    - name: "Local: Clone Docker Compose repo"
       delegate_to: localhost
       become: false
       git:
@@ -22,7 +20,7 @@
         version: main
         force: yes
 
-    - name: "Local: Find all compose files in {{ env_target }} folder"
+    - name: "Local: Find all compose files"
       delegate_to: localhost
       become: false
       find:
@@ -30,39 +28,26 @@
         patterns: "*.yaml,*.yml"
       register: found_compose_files
 
-    - name: Deploying Stacks
-      loop: "{{ found_compose_files.files }}"
-      loop_control:
-        label: "{{ item.path | basename }}"
-      vars:
-        service_name: "{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
-      block:
-        - name: "Ensure directory exists for {{ service_name }}"
-          file:
-            path: "{{ remote_base_path }}/{{ service_name }}"
-            state: directory
-            owner: levix
-            group: levix
-            mode: '0755'
-
-        - name: "Sync {{ service_name }} compose file"
-          copy:
-            src: "{{ item.path }}"
-            dest: "{{ remote_base_path }}/{{ service_name }}/docker-compose.yml"
-            owner: levix
-            group: levix
-            mode: '0644'
-
-        - name: "Docker Compose Up: {{ service_name }}"
-          community.docker.docker_compose_v2:
-            project_src: "{{ remote_base_path }}/{{ service_name }}"
-            project_name: "{{ service_name }}"
-            state: present
-            pull: always
-
-    - name: "Local: Cleanup temporary repo"
-      delegate_to: localhost
-      become: false
+    - name: "Ensure directory exists for each service"
       file:
-        path: "{{ temp_repo_path }}"
-        state: absent
+        path: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
+        state: directory
+        owner: "{{ ansible_user }}"
+        mode: '0755'
+      loop: "{{ found_compose_files.files }}"
+
+    - name: "Sync compose files to host"
+      copy:
+        src: "{{ item.path }}"
+        dest: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}/docker-compose.yml"
+      loop: "{{ found_compose_files.files }}"
+
+    - name: "Docker Compose Up"
+      community.docker.docker_compose_v2:
+        project_src: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
+        project_name: "{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
+        state: present
+        pull: always
+      loop: "{{ found_compose_files.files }}"
+      environment:
+        homarr_secret_key: "{{ homarr_secret_key | default('') }}"
