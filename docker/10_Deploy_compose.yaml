@@ -1,0 +1,50 @@
+# Deploy all compose files based on environment
+
+---
+- name: Deploy Environment Stacks
+  hosts: remote_hosts
+  become: true
+  vars:
+    # Set 'env_target' to 'camper' or 'test' in your Semaphore Environment 
+    remote_base_path: "/opt/appdata"
+    local_env_path: "{{ playbook_dir }}/{{ env_target }}"
+
+  tasks:
+    - name: "Find all compose files in {{ env_target }} folder"
+      delegate_to: localhost
+      become: false
+      find:
+        paths: "{{ local_env_path }}"
+        patterns: "*.yaml,*.yml"
+      register: found_compose_files
+
+    - name: Deploying Stacks
+      loop: "{{ found_compose_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+      vars:
+        # This converts 'homarr.yaml' to 'homarr'
+        service_name: "{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
+      block:
+        - name: "Ensure directory exists for {{ service_name }}"
+          file:
+            path: "{{ remote_base_path }}/{{ service_name }}"
+            state: directory
+            owner: jay
+            group: jay
+            mode: '0755'
+
+        - name: "Sync {{ service_name }} compose file"
+          copy:
+            src: "{{ item.path }}"
+            dest: "{{ remote_base_path }}/{{ service_name }}/docker-compose.yml"
+            owner: jay
+            group: jay
+            mode: '0644'
+
+        - name: "Docker Compose Up: {{ service_name }}"
+          community.docker.docker_compose_v2:
+            project_src: "{{ remote_base_path }}/{{ service_name }}"
+            project_name: "{{ service_name }}"
+            state: present
+            pull: always
