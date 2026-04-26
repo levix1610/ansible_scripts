@@ -30,16 +30,16 @@
           file:
             path: "{{ remote_base_path }}/{{ service_name }}"
             state: directory
-            owner: jay
-            group: jay
+            owner: levix
+            group: levix
             mode: '0755'
 
         - name: "Sync {{ service_name }} compose file"
           copy:
             src: "{{ item.path }}"
             dest: "{{ remote_base_path }}/{{ service_name }}/docker-compose.yml"
-            owner: jay
-            group: jay
+            owner: levix
+            group: levix
             mode: '0644'
 
         - name: "Docker Compose Up: {{ service_name }}"
