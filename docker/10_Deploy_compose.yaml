@@ -38,9 +38,11 @@
 
     - name: "Ensure directory exists for each service"
       file:
-        path: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
+        # This ensures we use the "clean" name (e.g., grafana) instead of the filename
+        path: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('-compose\\.(yaml|yml)$|\\.(yaml|yml)$', '') }}"
         state: directory
-        owner: "{{ ansible_user }}"
+        owner: "1001"
+        group: "1001"
         mode: '0755'
       loop: "{{ found_compose_files.files }}"
 
