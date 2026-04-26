@@ -9,6 +9,8 @@
     remote_base_path: "/opt/appdata"
     temp_repo_path: "{{ playbook_dir }}/.temp_docker_repo"
     docker_repo_url: "https://github.com/levix1610/docker_compose.git"
+    # Unified regex to strip both '-compose' and the extensions (.yaml/.yml)
+    clean_regex: '-compose\.(yaml|yml)$|\.(yaml|yml)$'
 
   tasks:
     - name: "Local: Clone Docker Compose repo"
@@ -38,8 +40,7 @@
 
     - name: "Ensure directory exists for each service"
       file:
-        # This ensures we use the "clean" name (e.g., grafana) instead of the filename
-        path: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('-compose\\.(yaml|yml)$|\\.(yaml|yml)$', '') }}"
+        path: "{{ remote_base_path }}/{{ item.path | basename | regex_replace(clean_regex, '') }}"
         state: directory
         owner: "1001"
         group: "1001"
@@ -49,16 +50,18 @@
     - name: "Sync compose files to host"
       copy:
         src: "{{ item.path }}"
-        dest: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}/docker-compose.yml"
+        dest: "{{ remote_base_path }}/{{ item.path | basename | regex_replace(clean_regex, '') }}/docker-compose.yml"
+        owner: "1001"
+        group: "1001"
+        mode: '0644'
       loop: "{{ found_compose_files.files }}"
 
     - name: "Docker Compose Up (Shell)"
       shell: "docker compose up -d"
       args:
-        chdir: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
+        chdir: "{{ remote_base_path }}/{{ item.path | basename | regex_replace(clean_regex, '') }}"
       loop: "{{ found_compose_files.files }}"
       loop_control:
         label: "{{ item.path | basename }}"
       environment:
-        # This still passes your Homarr secret into the shell environment
         homarr_secret_key: "{{ homarr_secret_key }}"
