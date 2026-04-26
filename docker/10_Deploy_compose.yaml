@@ -42,12 +42,13 @@
         dest: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}/docker-compose.yml"
       loop: "{{ found_compose_files.files }}"
 
-    - name: "Docker Compose Up"
-      community.docker.docker_compose_v2:
-        project_src: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
-        project_name: "{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
-        state: present
-        pull: always
+    - name: "Docker Compose Up (Shell)"
+      shell: "docker compose up -d"
+      args:
+        chdir: "{{ remote_base_path }}/{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
       loop: "{{ found_compose_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
       environment:
+        # This still passes your Homarr secret into the shell environment
         homarr_secret_key: "{{ homarr_secret_key | default('') }}"
