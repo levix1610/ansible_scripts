@@ -1,20 +1,32 @@
 # Deploy all compose files based on environment
 
 ---
-- name: Deploy Environment Stacks
-  hosts: remote_hosts
+- name: Deploy Stacks from External Compose Repo
+  hosts: remote_docker
   become: true
   vars:
-    # Set 'env_target' to 'camper' or 'test' in your Semaphore Environment 
+    # env_target comes from your Inventory (camper, test, etc.)
     remote_base_path: "/opt/appdata"
-    local_env_path: "{{ playbook_dir }}/{{ env_target }}"
+    
+    # Information for your second repo
+    docker_repo_url: "https://github.com/levix1610/docker_compose.git"
+    temp_repo_path: "{{ playbook_dir }}/.temp_docker_repo"
 
   tasks:
-    - name: "Find all compose files in {{ env_target }} folder"
+    - name: "Local: Clone Docker Compose repo to Semaphore Runner"
+      delegate_to: localhost
+      become: false
+      git:
+        repo: "{{ docker_repo_url }}"
+        dest: "{{ temp_repo_path }}"
+        version: main
+        force: yes
+
+    - name: "Local: Find all compose files in {{ env_target }} folder"
       delegate_to: localhost
       become: false
       find:
-        paths: "{{ local_env_path }}"
+        paths: "{{ temp_repo_path }}/{{ env_target }}"
         patterns: "*.yaml,*.yml"
       register: found_compose_files
 
@@ -23,7 +35,6 @@
       loop_control:
         label: "{{ item.path | basename }}"
       vars:
-        # This converts 'homarr.yaml' to 'homarr'
         service_name: "{{ item.path | basename | regex_replace('\\.(yaml|yml)$', '') }}"
       block:
         - name: "Ensure directory exists for {{ service_name }}"
@@ -48,3 +59,10 @@
             project_name: "{{ service_name }}"
             state: present
             pull: always
+
+    - name: "Local: Cleanup temporary repo"
+      delegate_to: localhost
+      become: false
+      file:
+        path: "{{ temp_repo_path }}"
+        state: absent
