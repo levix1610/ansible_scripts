@@ -19,6 +19,10 @@
         dest: "{{ temp_repo_path }}"
         version: main
         force: yes
+      vars:
+        ansible_remote_tmp: /tmp
+      environment:
+        HOME: /tmp
 
     - name: "Local: Find all compose files"
       delegate_to: localhost
@@ -27,6 +31,10 @@
         paths: "{{ temp_repo_path }}/{{ env_target }}"
         patterns: "*.yaml,*.yml"
       register: found_compose_files
+      vars:
+        ansible_remote_tmp: /tmp
+      environment:
+        HOME: /tmp
 
     - name: "Ensure directory exists for each service"
       file:
