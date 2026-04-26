@@ -59,4 +59,4 @@
         label: "{{ item.path | basename }}"
       environment:
         # This still passes your Homarr secret into the shell environment
-        homarr_secret_key: "{{ homarr_secret_key | default('') }}"
+        homarr_secret_key: "{{ homarr_secret_key }}"
