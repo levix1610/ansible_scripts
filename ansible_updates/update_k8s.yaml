@@ -2,7 +2,7 @@
 # Inventory dependant on which environment it updates
 ---
 - name: Rolling Update for MicroK8s Cluster
-  hosts: k8s_nodes
+  hosts: all_nodes
   serial: 1  # One node at a time
   become: yes
 
