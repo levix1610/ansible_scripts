@@ -56,20 +56,11 @@
         name: "{{ user_name }}"
         groups: docker
         append: yes
-
-    - name: Install native Ubuntu Python Docker SDK
-      ansible.builtin.apt:
-          name: python3-docker
-          state: present
-          update_cache: yes
-
-    - name: Force Ansible to reload Python environment
-      ansible.builtin.meta: clear_facts
-
-    - name: Create Portainer data volume
-      community.docker.docker_volume:
-        name: portainer_data
-        state: present
+  
+    - name: Create Portainer data volume via shell fallback
+      ansible.builtin.command: docker volume create portainer_data
+      args:
+        creates: /var/lib/docker/volumes/portainer_data  # Skip if it already exists
 
     - name: Deploy Portainer Container
       community.docker.docker_container:
