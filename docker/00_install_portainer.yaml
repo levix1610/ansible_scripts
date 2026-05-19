@@ -62,15 +62,19 @@
       args:
         creates: /var/lib/docker/volumes/portainer_data  # Skip if it already exists
 
-    - name: Deploy Portainer Container
-      community.docker.docker_container:
-        name: portainer
-        image: portainer/portainer-ce:latest
-        state: started
-        restart_policy: always
-        published_ports:
-          - "8000:8000"
-          - "9443:9443"
-        volumes:
-          - /var/run/docker.sock:/var/run/docker.sock
-          - portainer_data:/data
+    - name: Deploy Portainer Container via shell fallback
+      ansible.builtin.command: >
+        docker run -d
+        --name portainer 
+        --restart always 
+        -p 8000:8000 
+        -p 9443:9443 
+        -v /var/run/docker.sock:/var/run/docker.sock 
+        -v portainer_data:/data 
+        portainer/portainer-ce:latest
+      register: docker_run_result
+      failed_when: 
+        - docker_run_result.rc != 0 
+        - "'Already In Use' not in docker_run_result.stderr"
+      changed_when: docker_run_result.rc == 0
+      
