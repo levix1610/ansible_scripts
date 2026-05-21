@@ -18,6 +18,7 @@
       - plex
       - postgreshomarr
       - nginx
+      - luanti
 
   tasks:
     - name: Ensure NFS share is present and mounted
