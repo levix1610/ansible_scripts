@@ -19,6 +19,7 @@
       - postgreshomarr
       - nginx
       - luanti
+      - redishomarr
 
   tasks:
     - name: Ensure NFS share is present and mounted
