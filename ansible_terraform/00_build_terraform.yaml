@@ -39,7 +39,7 @@
       # The -auto-approve flag is necessary for Ansible to run non-interactively
       ansible.builtin.shell:  |
         . {{ env_script_path }} 
-        terraform apply -auto-approve -var-file={{ tfvars_file }}
+        terraform apply -auto-approve -var-file={{ tfvars_file }} -parallelism=1
       args:
         # Crucial: Execute the command from inside the working directory
         chdir: "{{ tf_working_dir }}"
