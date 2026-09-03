@@ -13,12 +13,14 @@
         state: present
         update_cache: yes
 
-    # Install Libraries
+    # Install Kubernetes Python Librarys with apt
     - name: Ensure Kubernetes Python library is installed
-      ansible.builtin.pip:
-        name: Kubernetes
+      ansible.builtin.apt:
+        name:
+          - python3-kubernetes
+          - python3-yaml
         state: present
-        extra_args: "--break-system-packages"
+        update_cache: true
 
     # Get the config for microk8s for user to use
     - name: Get MicroK8s config content
