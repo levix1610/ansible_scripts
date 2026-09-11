@@ -3,7 +3,7 @@
 
 ---
 - name: Gracefully Restart MicroK8s Cluster Nodes
-  hosts: k8s_nodes
+  hosts: all_nodes
   serial: 1 # Guarantees sequential, one-by-one node restarts
   become: true
 
