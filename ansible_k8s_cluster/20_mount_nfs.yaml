@@ -20,6 +20,7 @@
       - nginx
       - luanti
       - redishomarr
+      - portainer
 
   tasks:
     - name: Ensure NFS share is present and mounted
