@@ -1,6 +1,6 @@
 ---
 - name: Update Portainer Community Edition (CE)
-  hosts: your_docker_hosts # Replace with your target host or group
+  hosts: remote_docker # Replace with your target host or group
   become: yes
   vars:
     portainer_image: "portainer/portainer-ce:lts"
