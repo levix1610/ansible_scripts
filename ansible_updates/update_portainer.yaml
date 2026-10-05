@@ -1,0 +1,42 @@
+---
+- name: Update Portainer Community Edition (CE)
+  hosts: your_docker_hosts # Replace with your target host or group
+  become: yes
+  vars:
+    portainer_image: "portainer/portainer-ce:lts"
+    portainer_container_name: "portainer"
+
+  tasks:
+    - name: Ensure the Portainer data volume exists
+      community.docker.docker_volume:
+        name: portainer_data
+        state: present
+
+    - name: Pull the latest Portainer CE LTS image
+      community.docker.docker_image:
+        name: "{{ portainer_image }}"
+        source: pull
+        force_source: yes
+      register: image_pull
+
+    - name: Stop and remove the old Portainer container
+      community.docker.docker_container:
+        name: "{{ portainer_container_name }}"
+        state: absent
+      when: image_pull.changed
+      # We only force-stop/remove if a new image was actually pulled. 
+      # You can remove the 'when' clause if you want to force recreation every time.
+
+    - name: Create and start the updated Portainer CE container
+      community.docker.docker_container:
+        name: "{{ portainer_container_name }}"
+        image: "{{ portainer_image }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "8000:8000" # Used for Edge Agent communication
+          - "9443:9443" # HTTPS Web UI
+          # - "9000:9000" # Uncomment if you still need HTTP access (legacy)
+        volumes:
+          - "/var/run/docker.sock:/var/run/docker.sock"
+          - "portainer_data:/data"
