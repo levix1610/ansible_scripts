@@ -1,0 +1,33 @@
+# Mount Synology NFS share to docker host for persistent data storage
+
+---
+- name: Configure NFS mount on Portainer inventory nodes
+  hosts: all
+  become: true
+  vars:
+    nfs_server_path: "10.0.150.10:/volume1/docker_storage"
+    nfs_mount_point: "/mnt/docker-data"
+    nfs_fstype: "nfs4"
+    nfs_opts: "defaults,_netdev"
+
+  tasks:
+    - name: Install nfs-common package (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name: nfs-common
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Ensure mount point directory exists
+      ansible.builtin.file:
+        path: "{{ nfs_mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount NFS share and persist in /etc/fstab
+      ansible.posix.mount:
+        src: "{{ nfs_server_path }}"
+        path: "{{ nfs_mount_point }}"
+        fstype: "{{ nfs_fstype }}"
+        opts: "{{ nfs_opts }}"
+        state: mounted
