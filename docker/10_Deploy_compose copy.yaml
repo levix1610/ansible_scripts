@@ -1,0 +1,80 @@
+---
+- name: Deploy Stacks from External Compose Repo
+  hosts: remote_docker
+  become: true
+  gather_facts: false
+
+  vars:
+    remote_base_path: /opt/appdata
+    app_owner: "1001"
+    app_group: "1001"
+    docker_repo_url: https://github.com/levix1610/docker_compose.git
+    repo_ref: main
+    temp_repo_path: "{{ playbook_dir }}/.temp_docker_repo"
+    clean_regex: '-compose\.(yaml|yml)$|\.(yaml|yml)$'
+    # per-stack environment (secrets from Vault); only add stacks that need one
+    compose_env:
+      homarr:
+        HOMARR_SECRET_KEY: "{{ homarr_secret_key }}"
+
+  tasks:
+    - name: Clone Docker Compose repo
+      ansible.builtin.git:
+        repo: "{{ docker_repo_url }}"
+        dest: "{{ temp_repo_path }}"
+        version: "{{ repo_ref }}"
+        force: true
+      delegate_to: localhost
+      become: false
+
+    - name: Find all compose files for this environment
+      ansible.builtin.find:
+        paths: "{{ temp_repo_path }}/{{ env_target }}"
+        patterns: "*.yaml,*.yml"
+        file_type: file
+      delegate_to: localhost
+      become: false
+      register: found_compose_files
+
+    - name: Ensure directory exists for each service
+      ansible.builtin.file:
+        path: "{{ remote_base_path }}/{{ item.path | basename | regex_replace(clean_regex) }}"
+        state: directory
+        owner: "{{ app_owner }}"
+        group: "{{ app_group }}"
+        mode: "0755"
+      loop: "{{ found_compose_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Sync compose file to host
+      ansible.builtin.copy:
+        src: "{{ item.path }}"
+        dest: "{{ remote_base_path }}/{{ item.path | basename | regex_replace(clean_regex) }}/docker-compose.yml"
+        owner: "{{ app_owner }}"
+        group: "{{ app_group }}"
+        mode: "0644"
+      loop: "{{ found_compose_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
+
+    - name: Write .env for stacks that need environment
+      ansible.builtin.template:
+        src: env.j2
+        dest: "{{ remote_base_path }}/{{ item.key }}/.env"
+        owner: "{{ app_owner }}"
+        group: "{{ app_group }}"
+        mode: "0600"
+        variables:
+          env: "{{ item.value }}"
+      loop: "{{ compose_env | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+
+    - name: Docker Compose Up (idempotent)
+      community.docker.docker_compose_v2:
+        project_src: "{{ remote_base_path }}/{{ item.path | basename | regex_replace(clean_regex) }}"
+        state: present
+      loop: "{{ found_compose_files.files }}"
+      loop_control:
+        label: "{{ item.path | basename }}"
