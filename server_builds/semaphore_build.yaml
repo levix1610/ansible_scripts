@@ -20,11 +20,10 @@
         state: present
         update_cache: yes
 
-    - name: Download Semaphore native package
-      get_url:
-        url: "{{ semaphore_deb_url }}"
-        dest: "{{ download_dest }}"
-        mode: '0644'
+    - name: Download Semaphore native package using wget
+      command: wget -q -O {{ download_dest }} {{ semaphore_deb_url }}
+      args:
+        creates: "{{ download_dest }}"
 
     - name: Install Semaphore package
       apt:
