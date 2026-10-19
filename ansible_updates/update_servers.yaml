@@ -15,6 +15,9 @@
         upgrade: dist
         autoremove: yes
         purge: yes
+        force_apt_get: yes
+      environment:
+        DEBIAN_FRONTEND: noninteractive
     
     # 2. Specific update for Pi-hole (uses the [pihole] group)
     - name: Run Pi-hole update command
