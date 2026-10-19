@@ -1,15 +1,13 @@
-# This playbook is for updating all server outside of the k8s clusters
-# Inventory dependant on which environment it updates
 ---
 - name: Server update
-  hosts: all_nodes # Does all servers in the inventory list
-  become: yes # do as sudo
+  hosts: all_nodes
+  become: yes
   gather_facts: yes
  
   vars:
     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
-  tasks:
 
+  tasks:
     # 1. General OS Updates
     - name: Run apt update and upgrade
       apt:
@@ -22,7 +20,7 @@
     - name: Run Pi-hole update command
       ansible.builtin.command: pihole -up
       environment:
-        PATH: "/usr/local/bin:/usr/bin:/bin:{{ ansible_env.PATH }}"
+        PATH: "/usr/local/bin:/usr/bin:/bin:{{ ansible_facts['env']['PATH'] }}"
       when: "'pihole' in group_names"
 
     # 3. Reboot if required
@@ -35,4 +33,3 @@
       reboot:
         msg: "Rebooting to apply kernel updates"
       when: reboot_required_file.stat.exists
-
