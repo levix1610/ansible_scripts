@@ -20,7 +20,7 @@
     
     # 2. Specific update for Pi-hole (uses the [pihole] group)
     - name: Run Pi-hole update command
-      command: pihole -up
+      ansible.builtin.command: /usr/local/bin/pihole -up
       when: "'pihole' in group_names"
 
     # 3. Reboot if required
