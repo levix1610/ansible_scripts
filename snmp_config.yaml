@@ -1,0 +1,53 @@
+---
+- name: Configure SNMPv3 on Linux Servers
+  hosts: all
+  become: true
+  vars:
+    # Variables pulled from Semaphore Extra Vars or Environment
+    snmp_auth_pass: "{{ snmp_auth_password }}"
+    snmp_priv_pass: "{{ snmp_priv_password }}"
+    observium_subnet: "{{ observium_subnet }}"
+
+  tasks:
+    - name: Install required SNMP packages
+      apt:
+        name:
+          - snmp
+          - snmpd
+          - libsnmp-dev
+        state: present
+        update_cache: yes
+
+    - name: Ensure snmpd is stopped (required for net-snmp-config)
+      service:
+        name: snmpd
+        state: stopped
+
+    - name: Configure agentAddress to bind to the server's primary IP
+      lineinfile:
+        path: /etc/snmp/snmpd.conf
+        regexp: '^agentAddress\s+'
+        line: "agentAddress udp:{{ ansible_default_ipv4.address }}:161"
+        create: yes
+
+    - name: Add rouser access rule for the admin user and Observium subnet
+      lineinfile:
+        path: /etc/snmp/snmpd.conf
+        line: "rouser admin {{ observium_subnet }}"
+        state: present
+
+    - name: Check if the SNMPv3 user already exists
+      shell: grep -q "createUser admin" /var/lib/snmp/snmpd.conf
+      register: snmp_user_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create the SNMPv3 user securely using variables
+      command: net-snmp-config --create-snmpv3-user -ro -A "{{ snmp_auth_pass }}" -X "{{ snmp_priv_pass }}" -a MD5 -x AES admin
+      when: snmp_user_check.rc != 0
+
+    - name: Start and enable the snmpd service
+      service:
+        name: snmpd
+        state: started
+        enabled: yes
