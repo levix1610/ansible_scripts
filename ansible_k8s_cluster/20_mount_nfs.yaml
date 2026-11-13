@@ -12,14 +12,10 @@
       - heimdall
       - homarr
       - influxdb
-      - jellyfin
       - pihole
       - pihole-iot
-      - plex
       - postgreshomarr
       - nginx
-      - luanti
-      - redishomarr
       - portainer
 
   tasks:
